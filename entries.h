@@ -47,19 +47,19 @@ Entry* newEntry(long number,
 {
     Entry* entry = malloc(sizeof(Entry));
     entry->number = number;
-    entry->name = malloc(sizeof(char) * strlen(name));
+    entry->name = malloc(strlen(name) + 1);
     strcpy(entry->name, name);
-    entry->manufacturer = malloc(sizeof(char) * strlen(manufacturer));
+    entry->manufacturer = malloc(strlen(manufacturer) + 1);
     strcpy(entry->manufacturer, manufacturer);
     entry->calories = calories;
     entry->carbohydrates = carbohydrates;
     entry->fat = fat;
     entry->protein = protein;
     entry->servingSize = servingSize;
-    entry->servingUnits = malloc(sizeof(char) * strlen(servingUnits));
+    entry->servingUnits = malloc(strlen(servingUnits) + 1);
     strcpy(entry->servingUnits, servingUnits);
     entry->householdServingSize = householdServingSize;
-    entry->householdServingUnits = malloc(sizeof(char) * strlen(householdServingUnits));
+    entry->householdServingUnits = malloc(strlen(householdServingUnits) + 1);
     strcpy(entry->householdServingUnits, householdServingUnits);
     return entry;
 }

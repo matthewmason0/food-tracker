@@ -96,7 +96,7 @@ void rbInsertFixup(Tree* tree, Entry* node)
             {
                 node->parent->color = BLACK;
                 node->parent->parent->color = RED;
-                rbRightRotate(tree, node);
+                rbRightRotate(tree, node->parent->parent);
             }
         }
         else // parent is a right child
@@ -118,7 +118,7 @@ void rbInsertFixup(Tree* tree, Entry* node)
             {
                 node->parent->color = BLACK;
                 node->parent->parent->color = RED;
-                rbLeftRotate(tree, node);
+                rbLeftRotate(tree, node->parent->parent);
             }
         }
     }
