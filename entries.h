@@ -8,17 +8,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef enum color { RED, BLACK } Color;
-
-typedef struct entry
+typedef enum key
 {
-    // rb tree fields
-    Color color;
-    struct entry* left;
-    struct entry* right;
-    struct entry* parent;
-    // data fields
-    long number; // key
+    NUMBER,
+    NAME,
+    MANUFACTURER,
+    CALORIES,
+    CARBOHYDRATES,
+    FAT,
+    PROTEIN,
+    SERVING_SIZE,
+    SERVING_UNITS,
+    HOUSEHOLD_SERVING_SIZE,
+    HOUSEHOLD_SERVING_UNITS
+} Key;
+
+typedef struct food
+{
+    long number;
     char* name;
     char* manufacturer;
     double calories;
@@ -29,48 +36,61 @@ typedef struct entry
     char* servingUnits;
     double householdServingSize;
     char* householdServingUnits;
-} Entry;
+} Food;
 
-typedef struct tree { Entry* root; } Tree;
+typedef enum color { RED, BLACK } Color;
 
-Entry* newEntry(long number,
-                char* name,
-                char* manufacturer,
-                double calories,
-                double carbohydrates,
-                double fat,
-                double protein,
-                double servingSize,
-                char* servingUnits,
-                double householdServingSize,
-                char* householdServingUnits)
+typedef struct node
 {
-    Entry* entry = malloc(sizeof(Entry));
-    entry->number = number;
-    entry->name = malloc(strlen(name) + 1);
-    strcpy(entry->name, name);
-    entry->manufacturer = malloc(strlen(manufacturer) + 1);
-    strcpy(entry->manufacturer, manufacturer);
-    entry->calories = calories;
-    entry->carbohydrates = carbohydrates;
-    entry->fat = fat;
-    entry->protein = protein;
-    entry->servingSize = servingSize;
-    entry->servingUnits = malloc(strlen(servingUnits) + 1);
-    strcpy(entry->servingUnits, servingUnits);
-    entry->householdServingSize = householdServingSize;
-    entry->householdServingUnits = malloc(strlen(householdServingUnits) + 1);
-    strcpy(entry->householdServingUnits, householdServingUnits);
-    return entry;
+    // rb tree fields
+    Color color;
+    struct node* left;
+    struct node* right;
+    struct node* parent;
+    // satellite data
+    Food* food;
+} Node;
+
+typedef struct tree { Node* root; Key key; } Tree;
+
+Food* newFood(long number,
+              char *name,
+              char *manufacturer,
+              double calories,
+              double carbohydrates,
+              double fat,
+              double protein,
+              double servingSize,
+              char *servingUnits,
+              double householdServingSize,
+              char *householdServingUnits)
+{
+    Food* food = malloc(sizeof(Node));
+    food->number = number;
+    food->name = malloc(strlen(name) + 1);
+    strcpy(food->name, name);
+    food->manufacturer = malloc(strlen(manufacturer) + 1);
+    strcpy(food->manufacturer, manufacturer);
+    food->calories = calories;
+    food->carbohydrates = carbohydrates;
+    food->fat = fat;
+    food->protein = protein;
+    food->servingSize = servingSize;
+    food->servingUnits = malloc(strlen(servingUnits) + 1);
+    strcpy(food->servingUnits, servingUnits);
+    food->householdServingSize = householdServingSize;
+    food->householdServingUnits = malloc(strlen(householdServingUnits) + 1);
+    strcpy(food->householdServingUnits, householdServingUnits);
+    return food;
 }
 
-void deleteEntry(Entry* entry)
+void deleteFood(Food *food)
 {
-    free(entry->name);
-    free(entry->manufacturer);
-    free(entry->servingUnits);
-    free(entry->householdServingUnits);
-    free(entry);
+    free(food->name);
+    free(food->manufacturer);
+    free(food->servingUnits);
+    free(food->householdServingUnits);
+    free(food);
 }
 
 #endif //FOOD_TRACKER_ENTRIES_H

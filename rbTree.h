@@ -6,25 +6,27 @@
 #define FOOD_TRACKER_RBTREE_H
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include "entries.h"
 
-Entry* NIL;
+Node* NIL;
 
 Tree* rbNewTree()
 {
-    NIL = malloc(sizeof(Entry));
+    NIL = malloc(sizeof(Node));
     NIL->color = BLACK;
     Tree* tree = malloc(sizeof(Tree));
     tree->root = NIL;
     return tree;
 }
 
-void rbDeleteTreeRecursive(Entry* node)
+void rbDeleteTreeRecursive(Node* node)
 {
     if (node != NIL)
     {
         rbDeleteTreeRecursive(node->left);
-        deleteEntry(node);
+        deleteFood(node->food);
+        free(node);
         rbDeleteTreeRecursive(node->right);
     }
 }
@@ -32,13 +34,14 @@ void rbDeleteTreeRecursive(Entry* node)
 void rbDeleteTree(Tree* tree)
 {
     rbDeleteTreeRecursive(tree->root);
-    deleteEntry(NIL);
+    free(NIL);
+    free(tree);
 }
 
 // page 313
-void rbLeftRotate(Tree* tree, Entry* node)
+void rbLeftRotate(Tree* tree, Node* node)
 {
-    Entry* y = node->right;
+    Node* y = node->right;
     node->right = y->left;
     if (y->left != NIL)
         y->left->parent = node;
@@ -54,9 +57,9 @@ void rbLeftRotate(Tree* tree, Entry* node)
 }
 
 // page 313
-void rbRightRotate(Tree* tree, Entry* node)
+void rbRightRotate(Tree* tree, Node* node)
 {
-    Entry* y = node->left;
+    Node* y = node->left;
     node->left = y->right;
     if (y->right != NIL)
         y->left->parent = node;
@@ -72,14 +75,14 @@ void rbRightRotate(Tree* tree, Entry* node)
 }
 
 // page 316
-void rbInsertFixup(Tree* tree, Entry* node)
+void rbInsertFixup(Tree* tree, Node* node)
 {
     while (node->parent->color == RED)
     {
         // if parent is a left child
         if (node->parent == node->parent->parent->left)
         {
-            Entry* y = node->parent->parent->right;
+            Node* y = node->parent->parent->right;
             if (y->color == RED)
             {
                 node->parent->color = BLACK;
@@ -101,7 +104,7 @@ void rbInsertFixup(Tree* tree, Entry* node)
         }
         else // parent is a right child
         {
-            Entry* y = node->parent->parent->left;
+            Node* y = node->parent->parent->left;
             if (y->color == RED)
             {
                 node->parent->color = BLACK;
@@ -125,16 +128,48 @@ void rbInsertFixup(Tree* tree, Entry* node)
     tree->root->color = BLACK;
 }
 
-// page 315
-void rbInsert(Tree* tree, Entry* node)
+// compare (node a < node b) according to key
+bool rbCompare(Node *a, Node *b, Key key)
 {
-    Entry* y = NIL;
-    Entry* x = tree->root;
+    switch(key)
+    {
+    case NUMBER:
+        return a->food->number < b->food->number;
+    case NAME:
+        return strcmp(a->food->name, b->food->name) < 0;
+    case MANUFACTURER:
+        return strcmp(a->food->manufacturer, b->food->manufacturer) < 0;
+    case CALORIES:
+        return a->food->calories < b->food->calories;
+    case CARBOHYDRATES:
+        return a->food->carbohydrates < b->food->carbohydrates;
+    case FAT:
+        return a->food->fat < b->food->fat;
+    case PROTEIN:
+        return a->food->protein < b->food->protein;
+    case SERVING_SIZE:
+        return a->food->servingSize < b->food->servingSize;
+    case SERVING_UNITS:
+        return strcmp(a->food->servingUnits, b->food->servingUnits) < 0;
+    case HOUSEHOLD_SERVING_SIZE:
+        return a->food->householdServingSize < b->food->householdServingSize;
+    case HOUSEHOLD_SERVING_UNITS:
+        return strcmp(a->food->householdServingUnits, b->food->householdServingUnits) < 0;
+    }
+}
+
+// compare (
+
+// page 315
+void rbInsert(Tree* tree, Node* node)
+{
+    Node* y = NIL;
+    Node* x = tree->root;
 
     while (x != NIL)
     {
         y = x;
-        if (node->number < x->number)
+        if (rbCompare(node, x, tree->key))
             x = x->left;
         else
             x = x->right;
@@ -142,7 +177,7 @@ void rbInsert(Tree* tree, Entry* node)
     node->parent = y;
     if (y == NIL)
         tree->root = node;
-    else if (node->number < y->number)
+    else if (rbCompare(node, y, tree->key))
         y->left = node;
     else
         y->right = node;
@@ -153,7 +188,7 @@ void rbInsert(Tree* tree, Entry* node)
 }
 
 // page 323
-void rbTransplant(Tree* tree, Entry* oldNode, Entry* newNode)
+void rbTransplant(Tree* tree, Node* oldNode, Node* newNode)
 {
     if (oldNode->parent == NIL)
         tree->root = newNode;
@@ -164,20 +199,20 @@ void rbTransplant(Tree* tree, Entry* oldNode, Entry* newNode)
     newNode->parent = oldNode->parent;
 }
 
-Entry* rbMinimum(Entry* node)
+Node* rbMinimum(Node* node)
 {
 
 }
 
 // page 326
-void rbDeleteFixup(Tree* tree, Entry* node)
+void rbDeleteFixup(Tree* tree, Node* node)
 {
     while (node != tree->root && node->color == BLACK)
     {
         // if node is a left child
         if (node == node->parent->left)
         {
-            Entry* w = node->parent->right;
+            Node* w = node->parent->right;
             if (w->color == RED)
             {
                 w->color = BLACK;
@@ -208,7 +243,7 @@ void rbDeleteFixup(Tree* tree, Entry* node)
         }
         else // node is a right child
         {
-            Entry* w = node->parent->left;
+            Node* w = node->parent->left;
             if (w->color == RED)
             {
                 w->color = BLACK;
@@ -242,11 +277,11 @@ void rbDeleteFixup(Tree* tree, Entry* node)
 }
 
 // page 324
-void rbDelete(Tree* tree, Entry* node)
+void rbDelete(Tree* tree, Node* node)
 {
-    Entry* y = node;
+    Node* y = node;
     Color oldColor = y->color;
-    Entry* x;
+    Node* x;
     if (node->left == NIL)
     {
         x = node->right;
@@ -277,7 +312,110 @@ void rbDelete(Tree* tree, Entry* node)
     }
     if (oldColor == BLACK)
         rbDeleteFixup(tree, x);
-    deleteEntry(node);
+    deleteFood(node->food);
+    free(node);
+}
+
+long getLongKey(Node* node, Key key)
+{
+    if (key == NUMBER)
+        return node->food->number;
+    return -1;
+}
+
+char* getStringKey(Node* node, Key key)
+{
+    switch (key)
+    {
+    case NAME:
+        return node->food->name;
+    case MANUFACTURER:
+        return node->food->manufacturer;
+    case SERVING_UNITS:
+        return node->food->servingUnits;
+    case HOUSEHOLD_SERVING_UNITS:
+        return node->food->householdServingUnits;
+    default:
+        return NULL;
+    }
+}
+
+double getDoubleKey(Node* node, Key key)
+{
+    switch (key)
+    {
+    case CALORIES:
+        return node->food->calories;
+    case CARBOHYDRATES:
+        return node->food->carbohydrates;
+    case FAT:
+        return node->food->fat;
+    case PROTEIN:
+        return node->food->protein;
+    case SERVING_SIZE:
+        return node->food->servingSize;
+    case HOUSEHOLD_SERVING_SIZE:
+        return node->food->householdServingSize;
+    default:
+        return -1;
+    }
+}
+
+Node* rbSearchLongRecursive(Node* node, long query, Key key)
+{
+    if (getLongKey(node, key) == query)
+        return node;
+    if (node == NIL)
+        return NULL;
+    if (getLongKey(node, key) < query)
+        return rbSearchLongRecursive(node->left, query, key);
+    return rbSearchLongRecursive(node->right, query, key);
+}
+
+Node* rbSearchLong(Tree* tree, long query)
+{
+    // if tree is not keyed with a long, return NULL
+    if (getLongKey(tree->root, tree->key) == -1)
+        return NULL;
+    return rbSearchLongRecursive(tree->root, query, tree->key);
+}
+
+Node* rbSearchStringRecursive(Node* node, char* query, Key key)
+{
+    if (strcmp(getStringKey(node, key), query) == 0)
+        return node;
+    if (node == NIL)
+        return NULL;
+    if (strcmp(query, getStringKey(node, key)) < 0)
+        return rbSearchStringRecursive(node->left, query, key);
+    return rbSearchStringRecursive(node->right, query, key);
+}
+
+Node* rbSearchString(Tree* tree, char* query)
+{
+    // if tree is not keyed with a string, return NULL
+    if (getStringKey(tree->root, tree->key) == NULL)
+        return NULL;
+    return rbSearchStringRecursive(tree->root, query, tree->key);
+}
+
+Node* rbSearchDoubleRecursive(Node* node, double query, Key key)
+{
+    if (getDoubleKey(node, key) == query)
+        return node;
+    if (node == NIL)
+        return NULL;
+    if (getDoubleKey(node, key) < query)
+        return rbSearchDoubleRecursive(node->left, query, key);
+    return rbSearchDoubleRecursive(node->right, query, key);
+}
+
+Node* rbSearchDouble(Tree* tree, double query)
+{
+    // if tree is not keyed with a long, return NULL
+    if (getDoubleKey(tree->root, tree->key) == -1)
+        return NULL;
+    return rbSearchDoubleRecursive(tree->root, query, tree->key);
 }
 
 #endif //FOOD_TRACKER_RBTREE_H

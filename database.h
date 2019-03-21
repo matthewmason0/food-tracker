@@ -11,11 +11,26 @@
 #include "entries.h"
 #include "rbTree.h"
 
-Tree* rbTree;
+typedef struct list {
+    struct list* next;
+    Food* food;
+} List;
 
-void printEntryNumber(Entry* node)
+Tree* numberTree;
+Tree* nameTree;
+Tree* manufacturerTree;
+Tree* caloriesTree;
+Tree* carbohydratesTree;
+Tree* fatTree;
+Tree* proteinTree;
+Tree* servingSizeTree;
+Tree* servingUnitsTree;
+Tree* householdServingSizeTree;
+Tree* householdServingUnitsTree;
+
+void printEntryNumber(Node* node)
 {
-    printf("Number: %ld, Name: %s\n", node->number, node->name);
+    printf("Number: %ld, Name: %s\n", node->food->number, node->food->name);
 }
 
 char* readLine(FILE* file)
@@ -38,17 +53,12 @@ char* readLine(FILE* file)
     return realloc(line, i + 1);
 }
 
-int populateDatabase(char* csvFilename)
+List* createList(FILE* file)
 {
-    FILE* file = fopen(csvFilename, "r");
-    if (file == NULL)
-    {
-        printf("CSV file \"%s\" not found.\n", csvFilename);
-        return 0;
-    }
+    List* head = malloc(sizeof(List));
+    head->next = NULL;
 
-    rbTree = rbNewTree();
-
+    List* node = head;
     char* line = readLine(file);
     while(line[0] != '\0')
     {
@@ -64,29 +74,62 @@ int populateDatabase(char* csvFilename)
         double householdServingSize = atof(strsep(&line, "~"));
         char* householdServingUnits = strsep(&line, "~");
 
-        Entry* entry = newEntry(number,
-                                name,
-                                manufacturer,
-                                calories,
-                                carbohydrates,
-                                fat,
-                                protein,
-                                servingSize,
-                                servingUnits,
-                                householdServingSize,
-                                householdServingUnits);
+        node->food = newFood(number,
+                             name,
+                             manufacturer,
+                             calories,
+                             carbohydrates,
+                             fat,
+                             protein,
+                             servingSize,
+                             servingUnits,
+                             householdServingSize,
+                             householdServingUnits);
+        node->next = malloc(sizeof(List));
 
-        rbInsert(rbTree, entry);
+        node = node->next;
+        node->next = NULL;
 
         line = readLine(file);
     }
+
+    return head;
+}
+
+int populateDatabase(char* csvFilename)
+{
+    FILE* file = fopen(csvFilename, "r");
+    if (file == NULL)
+    {
+        printf("CSV file \"%s\" not found.\n", csvFilename);
+        return 0;
+    }
+
+    List* list = createList(file);
+
     fclose(file);
+
+    List* node = list;
+    while (node != NULL)
+    {
+        Node* rbNode = malloc(sizeof(Node));
+        rbNode->food = node->food;
+        rbInsert(numberTree, rbNode);
+        node = node->next;
+    }
+
+    free(list);
     return 1;
 }
 
 void destroyDatabase()
 {
-    rbDeleteTree(rbTree);
+    rbDeleteTree(numberTree);
+}
+
+void findNumber(long number)
+{
+    printEntryNumber(rbSearchLong(numberTree, number));
 }
 
 #endif //FOOD_TRACKER_DATABASE_H
