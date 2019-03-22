@@ -65,7 +65,7 @@ Food* newFood(long number,
               double householdServingSize,
               char *householdServingUnits)
 {
-    Food* food = malloc(sizeof(Node));
+    Food* food = malloc(sizeof(Food));
     food->number = number;
     food->name = malloc(strlen(name) + 1);
     strcpy(food->name, name);
@@ -91,6 +91,23 @@ void deleteFood(Food *food)
     free(food->servingUnits);
     free(food->householdServingUnits);
     free(food);
+}
+
+Node* newNode(Food* food)
+{
+    Node* node = malloc(sizeof(Node));
+    node->food = food;
+    return node;
+}
+
+void deleteNode(Node* node)
+{
+    free(node);
+}
+
+void printEntryNumber(Node* node)
+{
+    printf("Number: %ld, Name: %s\n", node->food->number, node->food->name);
 }
 
 #endif //FOOD_TRACKER_ENTRIES_H

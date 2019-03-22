@@ -7,34 +7,35 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <limits.h>
+#include <math.h>
 #include "entries.h"
 
 Node* NIL;
 
-Tree* rbNewTree()
+Tree* rbNewTree(Key key)
 {
-    NIL = malloc(sizeof(Node));
-    NIL->color = BLACK;
     Tree* tree = malloc(sizeof(Tree));
     tree->root = NIL;
+    tree->key = key;
     return tree;
 }
 
-void rbDeleteTreeRecursive(Node* node)
+void rbDeleteTreeRecursive(Node* node, bool deleteFoods)
 {
     if (node != NIL)
     {
-        rbDeleteTreeRecursive(node->left);
-        deleteFood(node->food);
-        free(node);
-        rbDeleteTreeRecursive(node->right);
+        rbDeleteTreeRecursive(node->left, deleteFoods);
+        if (deleteFoods)
+            deleteFood(node->food);
+        deleteNode(node);
+        rbDeleteTreeRecursive(node->right, deleteFoods);
     }
 }
 
-void rbDeleteTree(Tree* tree)
+void rbDeleteTree(Tree* tree, bool deleteFoods)
 {
-    rbDeleteTreeRecursive(tree->root);
-    free(NIL);
+    rbDeleteTreeRecursive(tree->root, deleteFoods);
     free(tree);
 }
 
@@ -49,7 +50,7 @@ void rbLeftRotate(Tree* tree, Node* node)
     if (node->parent == NIL)
         tree->root = y;
     else if (node == node->parent->left)
-        node->parent->left = y;
+        node->parent->left = y; //****************************** OK
     else
         node->parent->right = y;
     y->left = node;
@@ -57,12 +58,12 @@ void rbLeftRotate(Tree* tree, Node* node)
 }
 
 // page 313
-void rbRightRotate(Tree* tree, Node* node)
+void rbRightRotate(Tree* tree, Node* node) //*********************
 {
     Node* y = node->left;
     node->left = y->right;
     if (y->right != NIL)
-        y->left->parent = node;
+        y->right->parent = node;
     y->parent = node->parent;
     if (node->parent == NIL)
         tree->root = y;
@@ -81,7 +82,7 @@ void rbInsertFixup(Tree* tree, Node* node)
     {
         // if parent is a left child
         if (node->parent == node->parent->parent->left)
-        {
+        {                                                 //******************************
             Node* y = node->parent->parent->right;
             if (y->color == RED)
             {
@@ -114,7 +115,7 @@ void rbInsertFixup(Tree* tree, Node* node)
             }
             else if (node == node->parent->left)
             {
-                node = node->parent;
+                node = node->parent;   //*************************************************
                 rbRightRotate(tree, node);
             }
             else
@@ -129,7 +130,7 @@ void rbInsertFixup(Tree* tree, Node* node)
 }
 
 // compare (node a < node b) according to key
-bool rbCompare(Node *a, Node *b, Key key)
+bool rbCompare(Node* a, Node* b, Key key)
 {
     switch(key)
     {
@@ -158,8 +159,6 @@ bool rbCompare(Node *a, Node *b, Key key)
     }
 }
 
-// compare (
-
 // page 315
 void rbInsert(Tree* tree, Node* node)
 {
@@ -170,7 +169,7 @@ void rbInsert(Tree* tree, Node* node)
     {
         y = x;
         if (rbCompare(node, x, tree->key))
-            x = x->left;
+            x = x->left;   //******************************************
         else
             x = x->right;
     }
@@ -178,7 +177,7 @@ void rbInsert(Tree* tree, Node* node)
     if (y == NIL)
         tree->root = node;
     else if (rbCompare(node, y, tree->key))
-        y->left = node;
+        y->left = node;    //*******************************************
     else
         y->right = node;
     node->left = NIL;
@@ -187,134 +186,6 @@ void rbInsert(Tree* tree, Node* node)
     rbInsertFixup(tree, node);
 }
 
-// page 323
-void rbTransplant(Tree* tree, Node* oldNode, Node* newNode)
-{
-    if (oldNode->parent == NIL)
-        tree->root = newNode;
-    else if (oldNode == oldNode->parent->left)
-        oldNode->parent->left = newNode;
-    else
-        oldNode->parent->right = newNode;
-    newNode->parent = oldNode->parent;
-}
-
-Node* rbMinimum(Node* node)
-{
-
-}
-
-// page 326
-void rbDeleteFixup(Tree* tree, Node* node)
-{
-    while (node != tree->root && node->color == BLACK)
-    {
-        // if node is a left child
-        if (node == node->parent->left)
-        {
-            Node* w = node->parent->right;
-            if (w->color == RED)
-            {
-                w->color = BLACK;
-                node->parent->color = RED;
-                rbLeftRotate(tree, node->parent);
-                w = node->parent->right;
-            }
-            if (w->left->color == BLACK && w->right->color == BLACK)
-            {
-                w->color = RED;
-                node = node->parent;
-            }
-            else if (w->right->color == BLACK)
-            {
-                w->left->color = BLACK;
-                w->color = RED;
-                rbRightRotate(tree, w);
-                w = node->parent->right;
-            }
-            else
-            {
-                w->color = node->parent->color;
-                node->parent->color = BLACK;
-                w->right->color = BLACK;
-                rbLeftRotate(tree, node->parent);
-                node = tree->root;
-            }
-        }
-        else // node is a right child
-        {
-            Node* w = node->parent->left;
-            if (w->color == RED)
-            {
-                w->color = BLACK;
-                node->parent->color = RED;
-                rbLeftRotate(tree, node->parent);
-                w = node->parent->left;
-            }
-            if (w->left->color == BLACK && w->right->color == BLACK)
-            {
-                w->color = RED;
-                node = node->parent;
-            }
-            else if (w->left->color == BLACK)
-            {
-                w->right->color = BLACK;
-                w->color = RED;
-                rbRightRotate(tree, w);
-                w = node->parent->left;
-            }
-            else
-            {
-                w->color = node->parent->color;
-                node->parent->color = BLACK;
-                w->left->color = BLACK;
-                rbLeftRotate(tree, node->parent);
-                node = tree->root;
-            }
-        }
-    }
-    node->color = BLACK;
-}
-
-// page 324
-void rbDelete(Tree* tree, Node* node)
-{
-    Node* y = node;
-    Color oldColor = y->color;
-    Node* x;
-    if (node->left == NIL)
-    {
-        x = node->right;
-        rbTransplant(tree, node, node->right);
-    }
-    else if (node->right == NIL)
-    {
-        x = node->left;
-        rbTransplant(tree, node, node->left);
-    }
-    else
-    {
-        y = rbMinimum(node->right);
-        oldColor = y->color;
-        x = y->right;
-        if (y->parent == node)
-            x->parent = y;
-        else
-        {
-            rbTransplant(tree, y, y->right);
-            y->right = node->right;
-            y->right->parent = y;
-        }
-        rbTransplant(tree, node, y);
-        y->left = node->left;
-        y->left->parent = y;
-        y->color = node->color;
-    }
-    if (oldColor == BLACK)
-        rbDeleteFixup(tree, x);
-    deleteFood(node->food);
-    free(node);
-}
 
 long getLongKey(Node* node, Key key)
 {
@@ -361,61 +232,131 @@ double getDoubleKey(Node* node, Key key)
     }
 }
 
-Node* rbSearchLongRecursive(Node* node, long query, Key key)
-{
-    if (getLongKey(node, key) == query)
-        return node;
-    if (node == NIL)
-        return NULL;
-    if (getLongKey(node, key) < query)
-        return rbSearchLongRecursive(node->left, query, key);
-    return rbSearchLongRecursive(node->right, query, key);
+Node* rbminValue(struct node* node) {
+    struct node* current = node;
+
+    /* loop down to find the leftmost leaf */
+    while (current->left != NULL) {
+        current = current->left;
+    }
+    return current;
 }
 
-Node* rbSearchLong(Tree* tree, long query)
+Node* rbGetSuccessor(Node *node)
+{
+    // if the node has a right subtree, find its leftmost node
+    if (node->right != NIL)
+    {
+        while (node->left != NIL)
+            node = node->left;
+        return node;
+    }
+
+    // else, look up the tree for a left child and return its parent
+    Node* parent = node->parent;
+    while(parent != NIL && node == parent->right)
+    {
+        node = parent;
+        parent = parent->parent;
+    }
+    return parent;
+}
+
+Node** rbGetResults(Node* node, int results)
+{
+    Node** nodes = malloc(sizeof(Node*) * results);
+    for (int i = 0; i < results; i++)
+    {
+        if (node != NIL)
+        {
+            nodes[i] = node;
+            node = rbGetSuccessor(node);
+        }
+        else
+            nodes[i] = NIL;
+    }
+    return nodes;
+}
+
+Node** rbSearchLongRecursive(Node* node, long query, Key key, int results, long* minDiff, Node** minDiffNode)
+{
+    if (node == NIL)
+        return rbGetResults(*minDiffNode, results);
+    if (getLongKey(node, key) == query)
+        return rbGetResults(node, results);
+    long diff = query - getLongKey(node, key);
+    if (*minDiff > labs(diff))
+    {
+        *minDiff = labs(diff);
+        *minDiffNode = node;
+    }
+    if (diff < 0)
+        return rbSearchLongRecursive(node->left, query, key, results, minDiff, minDiffNode);
+    return rbSearchLongRecursive(node->right, query, key, results, minDiff, minDiffNode);
+}
+
+Node** rbSearchLong(Tree* tree, long query, int results)
 {
     // if tree is not keyed with a long, return NULL
     if (getLongKey(tree->root, tree->key) == -1)
         return NULL;
-    return rbSearchLongRecursive(tree->root, query, tree->key);
+    long minDiff = INT_MAX;
+    Node* minDiffNode = NIL;
+    return rbSearchLongRecursive(tree->root, query, tree->key, results, &minDiff, &minDiffNode);
 }
 
-Node* rbSearchStringRecursive(Node* node, char* query, Key key)
+Node** rbSearchStringRecursive(Node* node, char* query, Key key, int results, int* minDiff, Node** minDiffNode)
 {
-    if (strcmp(getStringKey(node, key), query) == 0)
-        return node;
     if (node == NIL)
-        return NULL;
-    if (strcmp(query, getStringKey(node, key)) < 0)
-        return rbSearchStringRecursive(node->left, query, key);
-    return rbSearchStringRecursive(node->right, query, key);
+        return rbGetResults(*minDiffNode, results);
+    if (strcmp(getStringKey(node, key), query) == 0)
+        return rbGetResults(node, results);
+    int diff = strcmp(query, getStringKey(node, key));
+    if (*minDiff > abs(diff))
+    {
+        *minDiff = abs(diff);
+        *minDiffNode = node;
+    }
+    if (diff < 0)
+        return rbSearchStringRecursive(node->left, query, key, results, minDiff, minDiffNode);
+    return rbSearchStringRecursive(node->right, query, key, results, minDiff, minDiffNode);
 }
 
-Node* rbSearchString(Tree* tree, char* query)
+Node** rbSearchString(Tree* tree, char* query, int results)
 {
     // if tree is not keyed with a string, return NULL
     if (getStringKey(tree->root, tree->key) == NULL)
         return NULL;
-    return rbSearchStringRecursive(tree->root, query, tree->key);
+    int minDiff = INT_MAX;
+    Node* minDiffNode = NIL;
+    return rbSearchStringRecursive(tree->root, query, tree->key, results, &minDiff, &minDiffNode);
 }
 
-Node* rbSearchDoubleRecursive(Node* node, double query, Key key)
+Node** rbSearchDoubleRecursive(Node* node, double query, Key key, int results, double* minDiff, Node** minDiffNode)
 {
-    if (getDoubleKey(node, key) == query)
-        return node;
     if (node == NIL)
-        return NULL;
-    if (getDoubleKey(node, key) < query)
-        return rbSearchDoubleRecursive(node->left, query, key);
-    return rbSearchDoubleRecursive(node->right, query, key);
+        return rbGetResults(*minDiffNode, results);
+    if (getLongKey(node, key) == query)
+        return rbGetResults(node, results);
+    double diff = query - getLongKey(node, key);
+    if (*minDiff > fabs(diff))
+    {
+        *minDiff = fabs(diff);
+        *minDiffNode = node;
+    }
+    if (diff < 0)
+        return rbSearchDoubleRecursive(node->left, query, key, results, minDiff, minDiffNode);
+    return rbSearchDoubleRecursive(node->right, query, key, results, minDiff, minDiffNode);
 }
 
-Node* rbSearchDouble(Tree* tree, double query)
+Node** rbSearchDouble(Tree* tree, double query, int results)
 {
     // if tree is not keyed with a long, return NULL
     if (getDoubleKey(tree->root, tree->key) == -1)
         return NULL;
-    return rbSearchDoubleRecursive(tree->root, query, tree->key);
+    double minDiff = INT_MAX;
+    Node* minDiffNode = NIL;
+    return rbSearchDoubleRecursive(tree->root, query, tree->key, results, &minDiff, &minDiffNode);
 }
 
 #endif //FOOD_TRACKER_RBTREE_H
