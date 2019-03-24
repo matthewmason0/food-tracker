@@ -2,8 +2,8 @@
 // Created by matthew on 3/17/19.
 //
 
-#ifndef FOOD_TRACKER_ENTRIES_H
-#define FOOD_TRACKER_ENTRIES_H
+#ifndef FOOD_TRACKER_FOOD_H
+#define FOOD_TRACKER_FOOD_H
 
 #include <stdlib.h>
 #include <string.h>
@@ -105,9 +105,9 @@ void deleteNode(Node* node)
     free(node);
 }
 
-void printEntryNumber(Node* node)
+void printNode(Node* node)
 {
     printf("Number: %ld, Name: %s\n", node->food->number, node->food->name);
 }
 
-#endif //FOOD_TRACKER_ENTRIES_H
+#endif //FOOD_TRACKER_FOOD_H

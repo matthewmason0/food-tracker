@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "entries.h"
+#include "food.h"
 #include "rbTree.h"
 
 Tree* numberTree;
@@ -57,15 +57,15 @@ int populateDatabase(char* csvFilename)
 
     numberTree = rbNewTree(NUMBER);
     nameTree = rbNewTree(NAME);
-//    manufacturerTree = rbNewTree(MANUFACTURER);
-//    caloriesTree = rbNewTree(CALORIES);
-//    carbohydratesTree = rbNewTree(CARBOHYDRATES);
-//    fatTree = rbNewTree(FAT);
-//    proteinTree = rbNewTree(PROTEIN);
-//    servingSizeTree = rbNewTree(SERVING_SIZE);
-//    servingUnitsTree = rbNewTree(SERVING_UNITS);
-//    householdServingSizeTree = rbNewTree(HOUSEHOLD_SERVING_SIZE);
-//    householdServingUnitsTree = rbNewTree(HOUSEHOLD_SERVING_UNITS);
+    manufacturerTree = rbNewTree(MANUFACTURER);
+    caloriesTree = rbNewTree(CALORIES);
+    carbohydratesTree = rbNewTree(CARBOHYDRATES);
+    fatTree = rbNewTree(FAT);
+    proteinTree = rbNewTree(PROTEIN);
+    servingSizeTree = rbNewTree(SERVING_SIZE);
+    servingUnitsTree = rbNewTree(SERVING_UNITS);
+    householdServingSizeTree = rbNewTree(HOUSEHOLD_SERVING_SIZE);
+    householdServingUnitsTree = rbNewTree(HOUSEHOLD_SERVING_UNITS);
 
 //    int num = 1;
     char* line = readLine(file);
@@ -97,7 +97,7 @@ int populateDatabase(char* csvFilename)
 
         rbInsert(numberTree, newNode(foodItem));
         rbInsert(nameTree, newNode(foodItem));
-//        rbInsert(manufacturerTree, newNode(foodItem));
+        rbInsert(manufacturerTree, newNode(foodItem));
 //        rbInsert(caloriesTree, newNode(foodItem));
 //        rbInsert(carbohydratesTree, newNode(foodItem));
 //        rbInsert(fatTree, newNode(foodItem));
@@ -118,8 +118,8 @@ int populateDatabase(char* csvFilename)
 void destroyDatabase()
 {
     rbDeleteTree(numberTree, false);
-    rbDeleteTree(nameTree, true);
-//    rbDeleteTree(manufacturerTree, false);
+    rbDeleteTree(nameTree, false);
+    rbDeleteTree(manufacturerTree, true);
 //    rbDeleteTree(caloriesTree, false);
 //    rbDeleteTree(carbohydratesTree, false);
 //    rbDeleteTree(fatTree, false);
@@ -134,22 +134,25 @@ void destroyDatabase()
 
 void findNumber(long number)
 {
-    Node** results = rbSearchLong(nameTree, number, 10);
+    Node** results = rbSearchLong(numberTree, number, 10);
     for (int i = 0; i < 10 && results[i] != NIL; i++)
-        printEntryNumber(results[i]);
+        printNode(results[i]);
     free(results);
 }
 
 void findName(char* name)
 {
-    Node** results = rbSearchString(nameTree, name, 50);
-    for (int i = 0; i < 50 && results[i] != NIL; i++)
-        printEntryNumber(results[i]);
+    Node** results = rbSearchString(nameTree, name, 10);
+    for (int i = 0; i < 10 && results[i] != NIL; i++)
+        printNode(results[i]);
     free(results);
 }
-//void findManufacturer(char* name)
-//{
-//    printEntryNumber(rbSearchString(manufacturerTree, name));
-//}
+void findManufacturer(char* manufacturer)
+{
+    Node** results = rbSearchString(manufacturerTree, manufacturer, 10);
+    for (int i = 0; i < 10 && results[i] != NIL; i++)
+        printNode(results[i]);
+    free(results);
+}
 
 #endif //FOOD_TRACKER_DATABASE_H

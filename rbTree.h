@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <math.h>
-#include "entries.h"
+#include "food.h"
 
 Node* NIL;
 
@@ -50,7 +50,7 @@ void rbLeftRotate(Tree* tree, Node* node)
     if (node->parent == NIL)
         tree->root = y;
     else if (node == node->parent->left)
-        node->parent->left = y; //****************************** OK
+        node->parent->left = y;
     else
         node->parent->right = y;
     y->left = node;
@@ -58,7 +58,7 @@ void rbLeftRotate(Tree* tree, Node* node)
 }
 
 // page 313
-void rbRightRotate(Tree* tree, Node* node) //*********************
+void rbRightRotate(Tree* tree, Node* node)
 {
     Node* y = node->left;
     node->left = y->right;
@@ -82,7 +82,7 @@ void rbInsertFixup(Tree* tree, Node* node)
     {
         // if parent is a left child
         if (node->parent == node->parent->parent->left)
-        {                                                 //******************************
+        {
             Node* y = node->parent->parent->right;
             if (y->color == RED)
             {
@@ -115,7 +115,7 @@ void rbInsertFixup(Tree* tree, Node* node)
             }
             else if (node == node->parent->left)
             {
-                node = node->parent;   //*************************************************
+                node = node->parent;
                 rbRightRotate(tree, node);
             }
             else
@@ -169,7 +169,7 @@ void rbInsert(Tree* tree, Node* node)
     {
         y = x;
         if (rbCompare(node, x, tree->key))
-            x = x->left;   //******************************************
+            x = x->left;
         else
             x = x->right;
     }
@@ -177,7 +177,7 @@ void rbInsert(Tree* tree, Node* node)
     if (y == NIL)
         tree->root = node;
     else if (rbCompare(node, y, tree->key))
-        y->left = node;    //*******************************************
+        y->left = node;
     else
         y->right = node;
     node->left = NIL;
