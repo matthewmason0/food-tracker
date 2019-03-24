@@ -300,9 +300,9 @@ Node** rbSearchStringRecursive(Node* node, char* query, Key key, int results, in
 {
     if (node == NIL)
         return rbGetResults(*minDiffNode, results);
-    if (strcmp(getStringKey(node, key), query) == 0)
+    if (strcasecmp(getStringKey(node, key), query) == 0)
         return rbGetResults(node, results);
-    int diff = strcmp(query, getStringKey(node, key));
+    int diff = strcasecmp(query, getStringKey(node, key));
     if (*minDiff > abs(diff))
     {
         *minDiff = abs(diff);
