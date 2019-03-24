@@ -232,21 +232,12 @@ double getDoubleKey(Node* node, Key key)
     }
 }
 
-Node* rbminValue(struct node* node) {
-    struct node* current = node;
-
-    /* loop down to find the leftmost leaf */
-    while (current->left != NULL) {
-        current = current->left;
-    }
-    return current;
-}
-
 Node* rbGetSuccessor(Node *node)
 {
     // if the node has a right subtree, find its leftmost node
     if (node->right != NIL)
     {
+        node = node->right;
         while (node->left != NIL)
             node = node->left;
         return node;
