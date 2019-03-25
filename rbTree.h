@@ -137,9 +137,9 @@ bool rbCompare(Node* a, Node* b, Key key)
     case NUMBER:
         return a->food->number < b->food->number;
     case NAME:
-        return strcmp(a->food->name, b->food->name) < 0;
+        return strcasecmp(a->food->name, b->food->name) < 0;
     case MANUFACTURER:
-        return strcmp(a->food->manufacturer, b->food->manufacturer) < 0;
+        return strcasecmp(a->food->manufacturer, b->food->manufacturer) < 0;
     case CALORIES:
         return a->food->calories < b->food->calories;
     case CARBOHYDRATES:
@@ -151,11 +151,11 @@ bool rbCompare(Node* a, Node* b, Key key)
     case SERVING_SIZE:
         return a->food->servingSize < b->food->servingSize;
     case SERVING_UNITS:
-        return strcmp(a->food->servingUnits, b->food->servingUnits) < 0;
+        return strcasecmp(a->food->servingUnits, b->food->servingUnits) < 0;
     case HOUSEHOLD_SERVING_SIZE:
         return a->food->householdServingSize < b->food->householdServingSize;
     case HOUSEHOLD_SERVING_UNITS:
-        return strcmp(a->food->householdServingUnits, b->food->householdServingUnits) < 0;
+        return strcasecmp(a->food->householdServingUnits, b->food->householdServingUnits) < 0;
     }
 }
 
@@ -245,7 +245,7 @@ Node* rbGetSuccessor(Node *node)
 
     // else, look up the tree for a left child and return its parent
     Node* parent = node->parent;
-    while(parent != NIL && node == parent->right)
+    while (parent != NIL && node == parent->right)
     {
         node = parent;
         parent = parent->parent;
@@ -298,19 +298,19 @@ Node** rbSearchLong(Tree* tree, long query, int results)
 
 Node** rbSearchStringRecursive(Node* node, char* query, Key key, int results, int* minDiff, Node** minDiffNode)
 {
-    if (node == NIL)
-        return rbGetResults(*minDiffNode, results);
+    if (node == NIL) // query not found
+        return NULL;
     if (strcasecmp(getStringKey(node, key), query) == 0)
         return rbGetResults(node, results);
-    int diff = strcasecmp(query, getStringKey(node, key));
-    if (*minDiff > abs(diff))
-    {
-        *minDiff = abs(diff);
-        *minDiffNode = node;
-    }
-    if (diff < 0)
-        return rbSearchStringRecursive(node->left, query, key, results, minDiff, minDiffNode);
-    return rbSearchStringRecursive(node->right, query, key, results, minDiff, minDiffNode);
+    Node** recursiveResult;
+    if (strcasecmp(query, getStringKey(node, key)) < 0)
+        recursiveResult = rbSearchStringRecursive(node->left, query, key, results, minDiff, minDiffNode);
+    else
+        recursiveResult = rbSearchStringRecursive(node->right, query, key, results, minDiff, minDiffNode);
+    // if query not found, return second best
+    if (recursiveResult == NULL)
+        return rbGetResults(node, results);
+    return recursiveResult;
 }
 
 Node** rbSearchString(Tree* tree, char* query, int results)

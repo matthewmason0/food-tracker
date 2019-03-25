@@ -194,8 +194,8 @@ int main(int argc, char** argv)
 
     t = clock();
 //    findNumber(45001534);
-//    findName(argv[1]);
-    findManufacturer("International Commodity Distributors, Inc.");
+    findName(argv[1]);
+//    findManufacturer("International Commodity Distributors, Inc.");
     t = clock() - t;
     time_taken = ((double)t)/CLOCKS_PER_SEC*1000000;
     printf("Search took %0.fus\n", time_taken);
