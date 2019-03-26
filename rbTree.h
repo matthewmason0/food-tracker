@@ -291,9 +291,7 @@ Node** rbSearchLong(Tree* tree, long query, int results)
     // if tree is not keyed with a long, return NULL
     if (getLongKey(tree->root, tree->key) == -1)
         return NULL;
-    long minDiff = INT_MAX;
-    Node* minDiffNode = NIL;
-    return rbSearchLongRecursive(tree->root, query, tree->key, results, &minDiff, &minDiffNode);
+    return rbSearchLongRecursive(tree->root, query, tree->key, results);
 }
 
 Node** rbSearchStringRecursive(Node* node, char* query, Key key, int results)
