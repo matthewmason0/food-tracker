@@ -269,21 +269,21 @@ Node** rbGetResults(Node* node, int results)
     return nodes;
 }
 
-Node** rbSearchLongRecursive(Node* node, long query, Key key, int results, long* minDiff, Node** minDiffNode)
+Node** rbSearchLongRecursive(Node* node, long query, Key key, int results)
 {
-    if (node == NIL)
-        return rbGetResults(*minDiffNode, results);
+    if (node == NIL) // query not found
+        return NULL;
     if (getLongKey(node, key) == query)
         return rbGetResults(node, results);
-    long diff = query - getLongKey(node, key);
-    if (*minDiff > labs(diff))
-    {
-        *minDiff = labs(diff);
-        *minDiffNode = node;
-    }
-    if (diff < 0)
-        return rbSearchLongRecursive(node->left, query, key, results, minDiff, minDiffNode);
-    return rbSearchLongRecursive(node->right, query, key, results, minDiff, minDiffNode);
+    Node** recursiveResult;
+    if (query < getLongKey(node, key))
+        recursiveResult = rbSearchLongRecursive(node->left, query, key, results);
+    else
+        recursiveResult = rbSearchLongRecursive(node->right, query, key, results);
+    // if query not found, return second best
+    if (recursiveResult == NULL)
+        return rbGetResults(node, results);
+    return recursiveResult;
 }
 
 Node** rbSearchLong(Tree* tree, long query, int results)
@@ -296,7 +296,7 @@ Node** rbSearchLong(Tree* tree, long query, int results)
     return rbSearchLongRecursive(tree->root, query, tree->key, results, &minDiff, &minDiffNode);
 }
 
-Node** rbSearchStringRecursive(Node* node, char* query, Key key, int results, int* minDiff, Node** minDiffNode)
+Node** rbSearchStringRecursive(Node* node, char* query, Key key, int results)
 {
     if (node == NIL) // query not found
         return NULL;
@@ -304,9 +304,9 @@ Node** rbSearchStringRecursive(Node* node, char* query, Key key, int results, in
         return rbGetResults(node, results);
     Node** recursiveResult;
     if (strcasecmp(query, getStringKey(node, key)) < 0)
-        recursiveResult = rbSearchStringRecursive(node->left, query, key, results, minDiff, minDiffNode);
+        recursiveResult = rbSearchStringRecursive(node->left, query, key, results);
     else
-        recursiveResult = rbSearchStringRecursive(node->right, query, key, results, minDiff, minDiffNode);
+        recursiveResult = rbSearchStringRecursive(node->right, query, key, results);
     // if query not found, return second best
     if (recursiveResult == NULL)
         return rbGetResults(node, results);
@@ -318,26 +318,24 @@ Node** rbSearchString(Tree* tree, char* query, int results)
     // if tree is not keyed with a string, return NULL
     if (getStringKey(tree->root, tree->key) == NULL)
         return NULL;
-    int minDiff = INT_MAX;
-    Node* minDiffNode = NIL;
-    return rbSearchStringRecursive(tree->root, query, tree->key, results, &minDiff, &minDiffNode);
+    return rbSearchStringRecursive(tree->root, query, tree->key, results);
 }
 
-Node** rbSearchDoubleRecursive(Node* node, double query, Key key, int results, double* minDiff, Node** minDiffNode)
+Node** rbSearchDoubleRecursive(Node* node, double query, Key key, int results)
 {
-    if (node == NIL)
-        return rbGetResults(*minDiffNode, results);
+    if (node == NIL) // query not found
+        return NULL;
     if (getLongKey(node, key) == query)
         return rbGetResults(node, results);
-    double diff = query - getLongKey(node, key);
-    if (*minDiff > fabs(diff))
-    {
-        *minDiff = fabs(diff);
-        *minDiffNode = node;
-    }
-    if (diff < 0)
-        return rbSearchDoubleRecursive(node->left, query, key, results, minDiff, minDiffNode);
-    return rbSearchDoubleRecursive(node->right, query, key, results, minDiff, minDiffNode);
+    Node** recursiveResult;
+    if (query < getLongKey(node, key))
+        recursiveResult = rbSearchDoubleRecursive(node->left, query, key, results);
+    else
+        recursiveResult = rbSearchDoubleRecursive(node->right, query, key, results);
+    // if query not found, return second best
+    if (recursiveResult == NULL)
+        return rbGetResults(node, results);
+    return recursiveResult;
 }
 
 Node** rbSearchDouble(Tree* tree, double query, int results)
@@ -345,9 +343,7 @@ Node** rbSearchDouble(Tree* tree, double query, int results)
     // if tree is not keyed with a long, return NULL
     if (getDoubleKey(tree->root, tree->key) == -1)
         return NULL;
-    double minDiff = INT_MAX;
-    Node* minDiffNode = NIL;
-    return rbSearchDoubleRecursive(tree->root, query, tree->key, results, &minDiff, &minDiffNode);
+    return rbSearchDoubleRecursive(tree->root, query, tree->key, results);
 }
 
 #endif //FOOD_TRACKER_RBTREE_H
