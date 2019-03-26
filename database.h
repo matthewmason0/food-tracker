@@ -50,10 +50,7 @@ int populateDatabase(char* csvFilename)
 
     FILE* file = fopen(csvFilename, "r");
     if (file == NULL)
-    {
-        printf("CSV file \"%s\" not found.\n", csvFilename);
         return 0;
-    }
 
     numberTree = rbNewTree(NUMBER);
     nameTree = rbNewTree(NAME);
