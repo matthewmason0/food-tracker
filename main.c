@@ -10,7 +10,9 @@
 #include <ncurses.h>
 #include "database.h"
 
-typedef enum control {QUIT, ERROR, MENU} Control;
+typedef enum control { QUIT, ERROR, MENU } Control;
+
+typedef enum colors { NORMAL, HIGHLIGHTED_ACTIVE, HIGHLIGHTED_INACTIVE } Colors;
 
 Control search(WINDOW* main);
 
@@ -20,17 +22,14 @@ int main(int argc, char** argv)
     noecho();
     curs_set(0);
     start_color();
-    init_pair(1, COLOR_WHITE, COLOR_BLACK);
-    init_pair(2, COLOR_BLUE, COLOR_WHITE);
-
-    WINDOW* main = newwin(getmaxy(stdscr) - 2, getmaxx(stdscr) - 4, 1, 2);
-
-    wbkgd(main, COLOR_PAIR(1));
+    init_pair(NORMAL, COLOR_WHITE, COLOR_BLACK);
+    init_pair(HIGHLIGHTED_ACTIVE, COLOR_WHITE, COLOR_BLUE);
+    init_pair(HIGHLIGHTED_INACTIVE, COLOR_BLACK, COLOR_WHITE);
 
     int row, col;
     getmaxyx(stdscr, row, col);
-    mvaddstr(row / 2, (col - strlen("Loading...")) / 2, "Loading...");
-    refresh();
+    mvwaddstr(stdscr, row / 2, (col - strlen("Loading...")) / 2, "Loading...");
+    wrefresh(stdscr);
 
     if (!populateDatabase("food_nutrient_db.csv"))
     {
@@ -39,39 +38,38 @@ int main(int argc, char** argv)
         return ERROR;
     }
 
+    wclear(stdscr);
+    wattron(stdscr, A_BOLD);
+    mvwprintw(stdscr, 1, 2, "Food Tracker v0.1");
+    wattroff(stdscr, A_BOLD);
+    wrefresh(stdscr);
+
+    WINDOW* main = newwin(getmaxy(stdscr) - 2, getmaxx(stdscr) - 4, 3, 2);
+    keypad(main, TRUE);
+
+    wbkgd(main, COLOR_PAIR(NORMAL));
+
     char list[3][18] = { "Search for a food", "Load user file", "Save user file" };
-    char item[18];
     int i = 0;
     bool fileLoaded = false;
 
     while (1) // main menu
     {
-        wattron(main, A_BOLD);
-        mvwprintw(main, 0, 0, "Food Tracker v0.1");
-        wattroff(main, A_BOLD);
+        wattron(main, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
+        mvwaddstr(main, 0, 0, list[0]);
+        wattroff(main, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
 
-        wattron(main, A_STANDOUT);
-        wattron(main, COLOR_PAIR(2));
-        sprintf(item, "%-18s", list[0]);
-        mvwprintw(main, 2, 0, "%s", item);
-        wattroff(main, A_STANDOUT);
-        wattroff(main, COLOR_PAIR(2));
-
-        sprintf(item, "%-18s", list[1]);
-        mvwprintw(main, 3, 0, "%s", item);
+        mvwaddstr(main, 1, 0, list[1]);
 
         if (!fileLoaded)
             wattron(main, A_DIM);
-        sprintf(item, "%-18s", list[2]);
-        mvwprintw(main, 4, 0, "%s", item);
+        mvwaddstr(main, 2, 0, list[2]);
         wattroff(main, A_DIM);
 
-        wrefresh(main); // update the terminal screen
+        wrefresh(main);
 
         i = 0;
-        keypad(main, TRUE);
 
-        // get the input
         int ch = wgetch(main);
         while (ch != 10)
         {
@@ -82,8 +80,7 @@ int main(int argc, char** argv)
             }
 
             // right pad with spaces to make the items appear with even width.
-            sprintf(item, "%-18s",  list[i]);
-            mvwprintw(main, i+2, 0, "%s", item);
+            mvwaddstr(main, i, 0, list[i]);
             // use a variable to increment or decrement the value based on the input.
             switch (ch)
             {
@@ -98,12 +95,9 @@ int main(int argc, char** argv)
                 break;
             }
 
-            wattron(main, A_STANDOUT);
-            wattron(main, COLOR_PAIR(2));
-            sprintf(item, "%-18s",  list[i]);
-            mvwprintw(main, i+2, 0, "%s", item);
-            wattroff(main, A_STANDOUT);
-            wattroff(main, COLOR_PAIR(2));
+            wattron(main, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
+            mvwaddstr(main, i, 0, list[i]);
+            wattroff(main, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
 
             ch = wgetch(main);
         }
@@ -130,16 +124,20 @@ int main(int argc, char** argv)
 
 Control search(WINDOW* main)
 {
+    typedef enum type { NAME, MANUFACTURER, UPC, NDB_NUMBER } Type;
     wclear(main);
-    wattron(main, A_BOLD);
-    mvwprintw(main, 0, 0, "Food Tracker v0.1");
-    wattroff(main, A_BOLD);
-    mvwprintw(main, 2, 0, "Use tab to change search type, up/down to highlight results, and enter to select.");
-    wattron(main, A_STANDOUT);
-    wattron(main, COLOR_PAIR(2));
-    mvwprintw(main, 5, 0, "Name");
-    wattroff(main, A_STANDOUT);
-    wattroff(main, COLOR_PAIR(2));
+    mvwprintw(main, 0, 0, "Use TAB to change search type, UP/DOWN to highlight results, and ENTER to select. Press ESC to return to menu.");
+    char types[4][20] = { "Name", "Manufacturer", "UPC", "NDB Number" };
+    Type selectedType = 0;
+    wmove(main, 3, 0);
+    for (int type = 0; type < 4; type++)
+    {
+        if (type == selectedType)
+            wattron(main, COLOR_PAIR(HIGHLIGHTED_INACTIVE));
+        waddstr(main, types[type]);
+        wattroff(main, COLOR_PAIR(HIGHLIGHTED_INACTIVE));
+        waddstr(main, "  ");
+    }
     wrefresh(main);
 
     WINDOW* queryWin = newwin(3, getmaxx(main), 7, 2);
@@ -153,7 +151,8 @@ Control search(WINDOW* main)
     keypad(queryWin, TRUE);
 
     int i = 0;
-    char query[100];
+    char query[getmaxx(queryWin)];
+    int highlightedItem = 0;
     int ch = wgetch(queryWin);
     while (ch != 'q')
     {
@@ -164,8 +163,8 @@ Control search(WINDOW* main)
             {
                 int y, x;
                 getyx(queryWin, y, x);
+                mvwaddch(queryWin, y, x - 1, ' ');
                 wmove(queryWin, y, x - 1);
-                wdelch(queryWin);
                 i--;
                 query[i] = '\0';
             }
@@ -173,40 +172,76 @@ Control search(WINDOW* main)
             {
                 wclear(resultsWin);
                 box(resultsWin, 0, 0);
-                wrefresh(resultsWin);
                 wmove(queryWin, 1, 1);
-                wrefresh(queryWin);
-                ch = wgetch(queryWin);
-                continue;
             }
             break;
         case '\t':
-            wprintw(queryWin, "Tab received");
+            selectedType = (selectedType + 1) % 4;
+            wmove(main, 3, 0);
+            for (int type = 0; type < 4; type++)
+            {
+                if (type == selectedType)
+                    wattron(main, COLOR_PAIR(HIGHLIGHTED_INACTIVE));
+                waddstr(main, types[type]);
+                wattroff(main, COLOR_PAIR(HIGHLIGHTED_INACTIVE));
+                waddstr(main, "  ");
+            }
+            wrefresh(main);
             break;
         case KEY_UP:
-            // move selected result up
+            if (highlightedItem != 0)
+                highlightedItem--;
             break;
         case KEY_DOWN:
-            // move down
+            if (highlightedItem != 9)
+                highlightedItem++;
             break;
         case 27: // ESC
             return MENU;
         case 10: // ENTER
             break;
         default:
-            waddch(queryWin, ch);
-            query[i] = (char) ch;
-            query[i + 1] = '\0';
-            i++;
+            if (isprint(ch))
+            {
+                waddch(queryWin, ch);
+                query[i] = (char) ch;
+                query[i + 1] = '\0';
+                i++;
+            }
             break;
         }
 
-        wclear(resultsWin);
-        box(resultsWin, 0, 0);
-        Node** results = rbSearchString(nameTree, query, 10);
-        for (int j = 0; j < 10 && results[j] != NIL; j++)
-            mvwprintw(resultsWin, j+1, 1, results[j]->food->name);
-        free(results);
+        if (i > 0) // print results
+        {
+            wclear(resultsWin);
+            box(resultsWin, 0, 0);
+            Node** results;
+            switch (selectedType)
+            {
+            case NAME:
+                results = rbSearchString(nameTree, query, 10);
+                break;
+            case MANUFACTURER:
+                results = rbSearchString(manufacturerTree, query, 10);
+                break;
+            case UPC:
+                results = rbSearchString(nameTree, query, 10);
+                break;
+            case NDB_NUMBER:
+                results = rbSearchString(numberTree, query, 10);
+                break;
+            }
+            for (int item = 0; item < 10 && results[item] != NIL; item++)
+            {
+                if (item == highlightedItem)
+                    wattron(resultsWin, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
+                mvwprintw(resultsWin, item + 1, 1, results[item]->food->name);
+                wattroff(resultsWin, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
+            }
+            free(results);
+        }
+        else
+            highlightedItem = 0;
 
         wrefresh(resultsWin);
         wrefresh(queryWin);
