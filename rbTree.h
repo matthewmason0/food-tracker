@@ -129,6 +129,32 @@ void rbInsertFixup(Tree* tree, Node* node)
     tree->root->color = BLACK;
 }
 
+char* getStringKey(Node* node, Key key)
+{
+    char* stringKey;
+    switch (key)
+    {
+    case NAME:
+        stringKey = node->food->name; break;
+    case MANUFACTURER:
+        stringKey = node->food->manufacturer; break;
+    case SERVING_UNITS:
+        stringKey = node->food->servingUnits; break;
+    case HOUSEHOLD_SERVING_UNITS:
+        stringKey = node->food->householdServingUnits; break;
+    default:
+        return NULL;
+    }
+    // skip article at start of key
+    if (strncasecmp(stringKey, "a ", 2) == 0)
+        return stringKey + 2;
+    else if (strncasecmp(stringKey, "an ", 3) == 0)
+        return stringKey + 3;
+    else if (strncasecmp(stringKey, "the ", 4) == 0)
+        return stringKey + 4;
+    return stringKey;
+}
+
 // compare (node a < node b) according to key
 bool rbCompare(Node* a, Node* b, Key key)
 {
@@ -136,10 +162,6 @@ bool rbCompare(Node* a, Node* b, Key key)
     {
     case NUMBER:
         return a->food->number < b->food->number;
-    case NAME:
-        return strcasecmp(a->food->name, b->food->name) < 0;
-    case MANUFACTURER:
-        return strcasecmp(a->food->manufacturer, b->food->manufacturer) < 0;
     case CALORIES:
         return a->food->calories < b->food->calories;
     case CARBOHYDRATES:
@@ -150,12 +172,13 @@ bool rbCompare(Node* a, Node* b, Key key)
         return a->food->protein < b->food->protein;
     case SERVING_SIZE:
         return a->food->servingSize < b->food->servingSize;
-    case SERVING_UNITS:
-        return strcasecmp(a->food->servingUnits, b->food->servingUnits) < 0;
     case HOUSEHOLD_SERVING_SIZE:
         return a->food->householdServingSize < b->food->householdServingSize;
+    case NAME:
+    case MANUFACTURER:
+    case SERVING_UNITS:
     case HOUSEHOLD_SERVING_UNITS:
-        return strcasecmp(a->food->householdServingUnits, b->food->householdServingUnits) < 0;
+        return strcasecmp(getStringKey(a, key), getStringKey(b, key)) < 0;
     }
 }
 
@@ -192,23 +215,6 @@ long getLongKey(Node* node, Key key)
     if (key == NUMBER)
         return node->food->number;
     return -1;
-}
-
-char* getStringKey(Node* node, Key key)
-{
-    switch (key)
-    {
-    case NAME:
-        return node->food->name;
-    case MANUFACTURER:
-        return node->food->manufacturer;
-    case SERVING_UNITS:
-        return node->food->servingUnits;
-    case HOUSEHOLD_SERVING_UNITS:
-        return node->food->householdServingUnits;
-    default:
-        return NULL;
-    }
 }
 
 double getDoubleKey(Node* node, Key key)
@@ -273,7 +279,7 @@ Node** rbSearchLongRecursive(Node* node, long query, Key key, int results)
 {
     if (node == NIL) // query not found
         return NULL;
-    if (getLongKey(node, key) == query)
+    if (query == getLongKey(node, key))
         return rbGetResults(node, results);
     Node** recursiveResult;
     if (query < getLongKey(node, key))
@@ -282,7 +288,12 @@ Node** rbSearchLongRecursive(Node* node, long query, Key key, int results)
         recursiveResult = rbSearchLongRecursive(node->right, query, key, results);
     // if query not found, return second best
     if (recursiveResult == NULL)
-        return rbGetResults(node, results);
+    {
+        // favor nodes greater than query; e.g. see rbSearchStringRecursive
+        if (query < getLongKey(node, key))
+            return rbGetResults(node, results);
+        return NULL; // go back one more node
+    }
     return recursiveResult;
 }
 
@@ -298,7 +309,7 @@ Node** rbSearchStringRecursive(Node* node, char* query, Key key, int results)
 {
     if (node == NIL) // query not found
         return NULL;
-    if (strcasecmp(getStringKey(node, key), query) == 0)
+    if (strcasecmp(query, getStringKey(node, key)) == 0)
         return rbGetResults(node, results);
     Node** recursiveResult;
     if (strcasecmp(query, getStringKey(node, key)) < 0)
@@ -307,7 +318,13 @@ Node** rbSearchStringRecursive(Node* node, char* query, Key key, int results)
         recursiveResult = rbSearchStringRecursive(node->right, query, key, results);
     // if query not found, return second best
     if (recursiveResult == NULL)
-        return rbGetResults(node, results);
+    {
+        // favor nodes greater than query
+        // e.g. this prevents the first result from being last item starting with "a" for a search starting with "b"
+        if (strcasecmp(query, getStringKey(node, key)) < 0)
+            return rbGetResults(node, results);
+        return NULL; // go back one more node
+    }
     return recursiveResult;
 }
 
@@ -316,6 +333,13 @@ Node** rbSearchString(Tree* tree, char* query, int results)
     // if tree is not keyed with a string, return NULL
     if (getStringKey(tree->root, tree->key) == NULL)
         return NULL;
+    // skip article at start of query
+    if (strncasecmp(query, "a ", 2) == 0)
+        query += 2;
+    else if (strncasecmp(query, "an ", 3) == 0)
+        query += 3;
+    else if (strncasecmp(query, "the ", 4) == 0)
+        query += 4;
     return rbSearchStringRecursive(tree->root, query, tree->key, results);
 }
 
@@ -323,7 +347,7 @@ Node** rbSearchDoubleRecursive(Node* node, double query, Key key, int results)
 {
     if (node == NIL) // query not found
         return NULL;
-    if (getLongKey(node, key) == query)
+    if (query == getLongKey(node, key))
         return rbGetResults(node, results);
     Node** recursiveResult;
     if (query < getLongKey(node, key))
@@ -332,7 +356,12 @@ Node** rbSearchDoubleRecursive(Node* node, double query, Key key, int results)
         recursiveResult = rbSearchDoubleRecursive(node->right, query, key, results);
     // if query not found, return second best
     if (recursiveResult == NULL)
-        return rbGetResults(node, results);
+    {
+        // favor nodes greater than query; e.g. see rbSearchStringRecursive
+        if (query < getDoubleKey(node, key))
+            return rbGetResults(node, results);
+        return NULL; // go back one more node
+    }
     return recursiveResult;
 }
 
