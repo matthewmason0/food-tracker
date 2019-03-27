@@ -8,9 +8,7 @@ Food tracker is a utility that works with the [USDA Nutrient Database (NDB)](htt
 
 Here is a video demonstraton:
 
-<a href="https://youtube.com/watch?feature=player_embedded&v=WKB0JUkksJg
-" target="_blank"><img src="https://img.youtube.com/vi/WKB0JUkksJg/maxresdefault.jpg" 
-alt="Demo Video" width="512" height="288" border="10" /></a>
+<a href="https://www.youtube.com/watch?v=WKB0JUkksJg"><img src="https://img.youtube.com/vi/WKB0JUkksJg/maxresdefault.jpg" alt="Demo Video" width="512" height="288" border="10" /></a>
 
 ## Setup
 1. Clone or download this repository to your computer
