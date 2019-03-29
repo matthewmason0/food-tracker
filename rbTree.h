@@ -134,6 +134,8 @@ char* getStringKey(Node* node, Key key)
     char* stringKey;
     switch (key)
     {
+    case NUMBER:
+        stringKey = node->food->number; break;
     case NAME:
         stringKey = node->food->name; break;
     case MANUFACTURER:
@@ -160,8 +162,6 @@ bool rbCompare(Node* a, Node* b, Key key)
 {
     switch(key)
     {
-    case NUMBER:
-        return a->food->number < b->food->number;
     case CALORIES:
         return a->food->calories < b->food->calories;
     case CARBOHYDRATES:
@@ -174,6 +174,7 @@ bool rbCompare(Node* a, Node* b, Key key)
         return a->food->servingSize < b->food->servingSize;
     case HOUSEHOLD_SERVING_SIZE:
         return a->food->householdServingSize < b->food->householdServingSize;
+    case NUMBER:
     case NAME:
     case MANUFACTURER:
     case SERVING_UNITS:
@@ -207,14 +208,6 @@ void rbInsert(Tree* tree, Node* node)
     node->right = NIL;
     node->color = RED;
     rbInsertFixup(tree, node);
-}
-
-
-long getLongKey(Node* node, Key key)
-{
-    if (key == NUMBER)
-        return node->food->number;
-    return -1;
 }
 
 double getDoubleKey(Node* node, Key key)
@@ -275,36 +268,6 @@ Node** rbGetResults(Node* node, int results)
     return nodes;
 }
 
-Node** rbSearchLongRecursive(Node* node, long query, Key key, int results)
-{
-    if (node == NIL) // query not found
-        return NULL;
-    if (query == getLongKey(node, key))
-        return rbGetResults(node, results);
-    Node** recursiveResult;
-    if (query < getLongKey(node, key))
-        recursiveResult = rbSearchLongRecursive(node->left, query, key, results);
-    else
-        recursiveResult = rbSearchLongRecursive(node->right, query, key, results);
-    // if query not found, return second best
-    if (recursiveResult == NULL)
-    {
-        // favor nodes greater than query; e.g. see rbSearchStringRecursive
-        if (query < getLongKey(node, key))
-            return rbGetResults(node, results);
-        return NULL; // go back one more node
-    }
-    return recursiveResult;
-}
-
-Node** rbSearchLong(Tree* tree, long query, int results)
-{
-    // if tree is not keyed with a long, return NULL
-    if (getLongKey(tree->root, tree->key) == -1)
-        return NULL;
-    return rbSearchLongRecursive(tree->root, query, tree->key, results);
-}
-
 Node** rbSearchStringRecursive(Node* node, char* query, Key key, int results)
 {
     if (node == NIL) // query not found
@@ -347,10 +310,10 @@ Node** rbSearchDoubleRecursive(Node* node, double query, Key key, int results)
 {
     if (node == NIL) // query not found
         return NULL;
-    if (query == getLongKey(node, key))
+    if (query == getDoubleKey(node, key))
         return rbGetResults(node, results);
     Node** recursiveResult;
-    if (query < getLongKey(node, key))
+    if (query < getDoubleKey(node, key))
         recursiveResult = rbSearchDoubleRecursive(node->left, query, key, results);
     else
         recursiveResult = rbSearchDoubleRecursive(node->right, query, key, results);

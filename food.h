@@ -25,7 +25,7 @@ typedef enum key
 
 typedef struct food
 {
-    long number;
+    char* number;
     char* name;
     char* manufacturer;
     double calories;
@@ -53,20 +53,21 @@ typedef struct node
 
 typedef struct tree { Node* root; Key key; } Tree;
 
-Food* newFood(long number,
-              char *name,
-              char *manufacturer,
+Food* newFood(char* number,
+              char* name,
+              char* manufacturer,
               double calories,
               double carbohydrates,
               double fat,
               double protein,
               double servingSize,
-              char *servingUnits,
+              char* servingUnits,
               double householdServingSize,
-              char *householdServingUnits)
+              char* householdServingUnits)
 {
     Food* food = malloc(sizeof(Food));
-    food->number = number;
+    food->number = malloc(strlen(number) + 1);
+    strcpy(food->number, number);
     food->name = malloc(strlen(name) + 1);
     strcpy(food->name, name);
     food->manufacturer = malloc(strlen(manufacturer) + 1);
@@ -86,6 +87,7 @@ Food* newFood(long number,
 
 void deleteFood(Food *food)
 {
+    free(food->number);
     free(food->name);
     free(food->manufacturer);
     free(food->servingUnits);
@@ -107,7 +109,7 @@ void deleteNode(Node* node)
 
 void printNode(Node* node)
 {
-    printf("Number: %ld, Name: %s\n", node->food->number, node->food->name);
+    printf("Number: %s, Name: %s\n", node->food->number, node->food->name);
 }
 
 #endif //FOOD_TRACKER_FOOD_H

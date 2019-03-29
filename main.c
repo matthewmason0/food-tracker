@@ -11,7 +11,7 @@
 #include <ncurses.h>
 #include "database.h"
 
-typedef enum control { QUIT, ERROR, MENU } Control;
+typedef enum control { QUIT, ERROR, MENU, SEARCH } Control;
 
 typedef enum colors { NORMAL, HIGHLIGHTED_ACTIVE, HIGHLIGHTED_INACTIVE, BAD, GOOD } Colors;
 
@@ -22,6 +22,8 @@ char* userName;
 Control search(WINDOW* main);
 Control createFile(WINDOW* main);
 Control loadFile(WINDOW* main);
+
+Control selectResult(WINDOW* main, char* query, int type, int selection);
 
 int main(int argc, char** argv)
 {
@@ -248,6 +250,18 @@ Control search(WINDOW* main)
         case 27: // ESC
             return MENU;
         case 10: // ENTER
+            if (i > 0)
+            {
+                if (selectResult(main, query, selectedType, highlightedItem) == QUIT)
+                    return QUIT;
+                curs_set(1);
+                wclear(main);
+                mvwprintw(main, 0, 0,
+                          "Use TAB to change search type, UP/DOWN to highlight results, and ENTER to select. Press ESC to return to menu.");
+                wrefresh(main);
+                box(queryWin, 0, 0);
+                box(resultsWin, 0, 0);
+            }
             break;
         default:
             if (i < getmaxx(queryWin) - 3 && isprint(ch))
@@ -402,7 +416,7 @@ Control loadFile(WINDOW* main)
     }
     else
     {
-        userFile = fopen(filename, "w");
+        userFile = fopen(filename, "a");
         if (userFile == NULL)
             return ERROR;
         fileLoaded = true;
@@ -414,4 +428,115 @@ Control loadFile(WINDOW* main)
     sleep(2);
     free(filename);
     return MENU;
+}
+
+Control selectResult(WINDOW* main, char* query, int type, int selected)
+{
+    typedef enum type { NAME, MANUFACTURER, UPC, NDB_NUMBER } Type;
+    curs_set(0);
+    wclear(main);
+    Node** results;
+    switch (type)
+    {
+    case NAME:
+        results = rbSearchString(nameTree, query, 10);
+        break;
+    case MANUFACTURER:
+        results = rbSearchString(manufacturerTree, query, 10);
+        break;
+    case UPC:
+        results = rbSearchString(nameTree, query, 10);
+        break;
+    case NDB_NUMBER:
+        results = rbSearchString(numberTree, query, 10);
+        break;
+    }
+    Food* result = results[selected]->food;
+    free(results);
+    wattron(main, A_UNDERLINE | A_BOLD);
+    mvwprintw(main, 0, 0, result->name);
+    wattroff(main, A_UNDERLINE | A_BOLD);
+    mvwprintw(main, 1, 0, result->manufacturer);
+    mvwprintw(main, 2, 0, "NDB No. %s", result->number);
+    mvwprintw(main, 4, 0, "Calories:      %0.2lf units", result->calories);
+    mvwprintw(main, 5, 0, "Carbohydrates: %0.2lf units", result->carbohydrates);
+    mvwprintw(main, 6, 0, "Fat:           %0.2lf units", result->fat);
+    mvwprintw(main, 7, 0, "Protein:       %0.2lf units", result->protein);
+    mvwprintw(main, 8, 0, "Serving Size:  %0.2lf %s,", result->servingSize, result->servingUnits);
+    // only display decimal values if needed
+    if (result->householdServingSize - (int)(result->householdServingSize))
+        mvwprintw(main, 9, 0, "               %0.2lf %s", result->householdServingSize, result->householdServingUnits);
+    else
+        mvwprintw(main, 9, 0, "               %0.lf %s", result->householdServingSize, result->householdServingUnits);
+
+    char list[2][18] = { "Back to search", "Save to user file" };
+    int i = 0;
+
+    wattron(main, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
+    mvwaddstr(main, 11, 0, list[0]);
+    wattroff(main, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
+    if (!fileLoaded)
+        wattron(main, A_DIM);
+    mvwaddstr(main, 12, 0, list[1]);
+    wattroff(main, A_DIM);
+    if (fileLoaded)
+        wprintw(main, " | User: %s", userName);
+
+    wrefresh(main);
+
+    i = 0;
+
+    int ch = wgetch(main);
+    while (ch != 'q')
+    {
+        switch (ch)
+        {
+        case KEY_UP:
+            i -= (i == 0) ? 0 : 1;
+            break;
+        case KEY_DOWN:
+            if (fileLoaded)
+                i += (i == 1) ? 0 : 1;
+            else
+                i += (i == 0) ? 0 : 1;
+            break;
+        case 10: // ENTER
+            if (i == 0) // Back to search
+                return SEARCH;
+            // Save to user file
+            fprintf(userFile, "%s~%s~%s~%lf~%lf~%lf~%lf~%lf~%s~%lf~%s\n", result->number,
+                                                                          result->name,
+                                                                          result->manufacturer,
+                                                                          result->calories,
+                                                                          result->carbohydrates,
+                                                                          result->fat,
+                                                                          result->protein,
+                                                                          result->servingSize,
+                                                                          result->servingUnits,
+                                                                          result->householdServingSize,
+                                                                          result->householdServingUnits);
+            wattron(main, COLOR_PAIR(GOOD));
+            mvwprintw(main, 14, 0, "Food saved!");
+            wattroff(main, COLOR_PAIR(GOOD));
+            wrefresh(main);
+            sleep(1);
+            return SEARCH;
+        }
+
+        for (int option = 0; option < 2; option++)
+        {
+            if (option == i)
+                wattron(main, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
+            if (option == 1 && !fileLoaded)
+                wattron(main, A_DIM);
+            mvwaddstr(main, option + 11, 0, list[option]);
+            if (option == 1 && fileLoaded)
+                wprintw(main, " | User: %s", userName);
+            wattroff(main, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
+            wattroff(main, A_DIM);
+        }
+
+        ch = wgetch(main);
+    }
+    return QUIT;
 }

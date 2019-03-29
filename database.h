@@ -68,7 +68,7 @@ int populateDatabase(char* csvFilename)
     char* line = readLine(file);
     while(line[0] != '\0')
     {
-        long number          = atol(strsep(&line, "~"));
+        char* number         = strsep(&line, "~");
         char* name           = strsep(&line, "~");
         char* manufacturer   = strsep(&line, "~");
         double calories      = atof(strsep(&line, "~"));
@@ -127,14 +127,6 @@ void destroyDatabase()
 //    rbDeleteTree(householdServingUnitsTree, true);
 
     free(NIL);
-}
-
-void findNumber(long number)
-{
-    Node** results = rbSearchLong(numberTree, number, 10);
-    for (int i = 0; i < 10 && results[i] != NIL; i++)
-        printNode(results[i]);
-    free(results);
 }
 
 void findName(char* name)
