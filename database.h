@@ -11,17 +11,8 @@
 #include "food.h"
 #include "rbTree.h"
 
-Tree* numberTree;
-Tree* nameTree;
-Tree* manufacturerTree;
-Tree* caloriesTree;
-Tree* carbohydratesTree;
-Tree* fatTree;
-Tree* proteinTree;
-Tree* servingSizeTree;
-Tree* servingUnitsTree;
-Tree* householdServingSizeTree;
-Tree* householdServingUnitsTree;
+Tree* databaseTrees[HOUSEHOLD_SERVING_UNITS + 1];
+Tree* userTrees[HOUSEHOLD_SERVING_UNITS + 1];
 
 char* readLine(FILE* file)
 {
@@ -52,24 +43,15 @@ int populateDatabase(char* csvFilename)
     if (file == NULL)
         return 0;
 
-    numberTree = rbNewTree(NUMBER);
-    nameTree = rbNewTree(NAME);
-    manufacturerTree = rbNewTree(MANUFACTURER);
-    caloriesTree = rbNewTree(CALORIES);
-    carbohydratesTree = rbNewTree(CARBOHYDRATES);
-    fatTree = rbNewTree(FAT);
-    proteinTree = rbNewTree(PROTEIN);
-    servingSizeTree = rbNewTree(SERVING_SIZE);
-    servingUnitsTree = rbNewTree(SERVING_UNITS);
-    householdServingSizeTree = rbNewTree(HOUSEHOLD_SERVING_SIZE);
-    householdServingUnitsTree = rbNewTree(HOUSEHOLD_SERVING_UNITS);
+    for (Key key = NUMBER; key <= MANUFACTURER; key++)
+        databaseTrees[key] = rbNewTree(key);
 
-//    int num = 1;
     char* line = readLine(file);
     while(line[0] != '\0')
     {
         char* number         = strsep(&line, "~");
         char* name           = strsep(&line, "~");
+        char* upc            = strsep(&line, "~");
         char* manufacturer   = strsep(&line, "~");
         double calories      = atof(strsep(&line, "~"));
         double carbohydrates = atof(strsep(&line, "~"));
@@ -82,6 +64,7 @@ int populateDatabase(char* csvFilename)
 
         Food* foodItem = newFood(number,
                                  name,
+                                 upc,
                                  manufacturer,
                                  calories,
                                  carbohydrates,
@@ -92,19 +75,8 @@ int populateDatabase(char* csvFilename)
                                  householdServingSize,
                                  householdServingUnits);
 
-        rbInsert(numberTree, newNode(foodItem));
-        rbInsert(nameTree, newNode(foodItem));
-        rbInsert(manufacturerTree, newNode(foodItem));
-//        rbInsert(caloriesTree, newNode(foodItem));
-//        rbInsert(carbohydratesTree, newNode(foodItem));
-//        rbInsert(fatTree, newNode(foodItem));
-//        rbInsert(proteinTree, newNode(foodItem));
-//        rbInsert(servingSizeTree, newNode(foodItem));
-//        rbInsert(servingUnitsTree, newNode(foodItem));
-//        rbInsert(householdServingSizeTree, newNode(foodItem));
-//        rbInsert(householdServingUnitsTree, newNode(foodItem));
-
-//        printf("Nodes inserted: %d\n", num++);
+        for (Key key = NUMBER; key <= MANUFACTURER; key++)
+            rbInsert(databaseTrees[key], newNode(foodItem));
 
         line = readLine(file);
     }
@@ -114,34 +86,65 @@ int populateDatabase(char* csvFilename)
 
 void destroyDatabase()
 {
-    rbDeleteTree(numberTree, false);
-    rbDeleteTree(nameTree, false);
-    rbDeleteTree(manufacturerTree, true);
-//    rbDeleteTree(caloriesTree, false);
-//    rbDeleteTree(carbohydratesTree, false);
-//    rbDeleteTree(fatTree, false);
-//    rbDeleteTree(proteinTree, false);
-//    rbDeleteTree(servingSizeTree, false);
-//    rbDeleteTree(servingUnitsTree, false);
-//    rbDeleteTree(householdServingSizeTree, false);
-//    rbDeleteTree(householdServingUnitsTree, true);
-
+    for (Key key = NUMBER; key <= MANUFACTURER; key++)
+        rbDeleteTree(databaseTrees[key], key == MANUFACTURER);
     free(NIL);
 }
 
 void findName(char* name)
 {
-    Node** results = rbSearchString(nameTree, name, 10);
+    Node** results = rbSearchString(databaseTrees[UPC], name, 10);
     for (int i = 0; i < 10 && results[i] != NIL; i++)
         printNode(results[i]);
     free(results);
 }
 void findManufacturer(char* manufacturer)
 {
-    Node** results = rbSearchString(manufacturerTree, manufacturer, 10);
+    Node** results = rbSearchString(databaseTrees[MANUFACTURER], manufacturer, 10);
     for (int i = 0; i < 10 && results[i] != NIL; i++)
         printNode(results[i]);
     free(results);
+}
+
+int loadUserDatabase(FILE* userFile)
+{
+    for (Key key = NUMBER; key <= HOUSEHOLD_SERVING_UNITS; key++)
+        userTrees[key] = rbNewTree(key);
+
+    char* line = readLine(userFile);
+    while(line[0] != '\0')
+    {
+        char* number         = strsep(&line, "~");
+        char* name           = strsep(&line, "~");
+        char* upc            = strsep(&line, "~");
+        char* manufacturer   = strsep(&line, "~");
+        double calories      = atof(strsep(&line, "~"));
+        double carbohydrates = atof(strsep(&line, "~"));
+        double fat           = atof(strsep(&line, "~"));
+        double protein       = atof(strsep(&line, "~"));
+        double servingSize   = atof(strsep(&line, "~"));
+        char* servingUnits   = strsep(&line, "~");
+        double householdServingSize = atof(strsep(&line, "~"));
+        char* householdServingUnits = strsep(&line, "~");
+
+        Food* foodItem = newFood(number,
+                                 name,
+                                 upc,
+                                 manufacturer,
+                                 calories,
+                                 carbohydrates,
+                                 fat,
+                                 protein,
+                                 servingSize,
+                                 servingUnits,
+                                 householdServingSize,
+                                 householdServingUnits);
+
+        for (Key key = NUMBER; key <= HOUSEHOLD_SERVING_UNITS; key++)
+            rbInsert(userTrees[key], newNode(foodItem));
+
+        line = readLine(userFile);
+    }
 }
 
 #endif //FOOD_TRACKER_DATABASE_H

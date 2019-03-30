@@ -138,6 +138,8 @@ char* getStringKey(Node* node, Key key)
         stringKey = node->food->number; break;
     case NAME:
         stringKey = node->food->name; break;
+    case UPC:
+        stringKey = node->food->upc; break;
     case MANUFACTURER:
         stringKey = node->food->manufacturer; break;
     case SERVING_UNITS:
@@ -176,6 +178,7 @@ bool rbCompare(Node* a, Node* b, Key key)
         return a->food->householdServingSize < b->food->householdServingSize;
     case NUMBER:
     case NAME:
+    case UPC:
     case MANUFACTURER:
     case SERVING_UNITS:
     case HOUSEHOLD_SERVING_UNITS:

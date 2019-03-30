@@ -12,6 +12,7 @@ typedef enum key
 {
     NUMBER,
     NAME,
+    UPC,
     MANUFACTURER,
     CALORIES,
     CARBOHYDRATES,
@@ -27,6 +28,7 @@ typedef struct food
 {
     char* number;
     char* name;
+    char* upc;
     char* manufacturer;
     double calories;
     double carbohydrates;
@@ -55,6 +57,7 @@ typedef struct tree { Node* root; Key key; } Tree;
 
 Food* newFood(char* number,
               char* name,
+              char* upc,
               char* manufacturer,
               double calories,
               double carbohydrates,
@@ -70,6 +73,8 @@ Food* newFood(char* number,
     strcpy(food->number, number);
     food->name = malloc(strlen(name) + 1);
     strcpy(food->name, name);
+    food->upc = malloc(strlen(upc) + 1);
+    strcpy(food->upc, upc);
     food->manufacturer = malloc(strlen(manufacturer) + 1);
     strcpy(food->manufacturer, manufacturer);
     food->calories = calories;
@@ -89,6 +94,7 @@ void deleteFood(Food *food)
 {
     free(food->number);
     free(food->name);
+    free(food->upc);
     free(food->manufacturer);
     free(food->servingUnits);
     free(food->householdServingUnits);

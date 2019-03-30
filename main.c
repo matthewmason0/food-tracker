@@ -15,6 +15,8 @@ typedef enum control { QUIT, ERROR, MENU, SEARCH } Control;
 
 typedef enum colors { NORMAL, HIGHLIGHTED_ACTIVE, HIGHLIGHTED_INACTIVE, BAD, GOOD } Colors;
 
+typedef enum type { T_NAME, T_MANUFACTURER, T_UPC, T_NDB } Type;
+
 FILE* userFile = NULL;
 bool fileLoaded = false;
 char* userName;
@@ -30,7 +32,7 @@ int main(int argc, char** argv)
 /*
     clock_t t;
     t = clock();
-    if (!populateDatabase("food_nutrient_db.csv"))
+    if (!populateDatabase("food_database.csv"))
         return 1;
     t = clock() - t;
     double time_taken = ((double)t)/CLOCKS_PER_SEC;
@@ -67,10 +69,10 @@ int main(int argc, char** argv)
     wattroff(stdscr, A_BOLD);
     wrefresh(stdscr);
 
-    if (!populateDatabase("food_nutrient_db.csv"))
+    if (!populateDatabase("food_database.csv"))
     {
         endwin();
-        printf("CSV file \"food_nutrient_db.csv\" not found.\n");
+        printf("CSV file \"food_database.csv\" not found.\n");
         return ERROR;
     }
 
@@ -175,7 +177,6 @@ int main(int argc, char** argv)
 
 Control search(WINDOW* main)
 {
-    typedef enum type { NAME, MANUFACTURER, UPC, NDB_NUMBER } Type;
     wclear(main);
     mvwprintw(main, 0, 0, "Use TAB to change search type, UP/DOWN to highlight results, and ENTER to select. Press ESC to return to menu.");
     char types[4][20] = { "Name", "Manufacturer", "UPC", "NDB Number" };
@@ -281,17 +282,17 @@ Control search(WINDOW* main)
             Node** results;
             switch (selectedType)
             {
-            case NAME:
-                results = rbSearchString(nameTree, query, 10);
+            case T_NAME:
+                results = rbSearchString(databaseTrees[NAME], query, 10);
                 break;
-            case MANUFACTURER:
-                results = rbSearchString(manufacturerTree, query, 10);
+            case T_MANUFACTURER:
+                results = rbSearchString(databaseTrees[MANUFACTURER], query, 10);
                 break;
-            case UPC:
-                results = rbSearchString(nameTree, query, 10);
+            case T_UPC:
+                results = rbSearchString(databaseTrees[UPC], query, 10);
                 break;
-            case NDB_NUMBER:
-                results = rbSearchString(numberTree, query, 10);
+            case T_NDB:
+                results = rbSearchString(databaseTrees[NUMBER], query, 10);
                 break;
             }
             for (int item = 0; item < 10 && results[item] != NIL; item++)
@@ -432,23 +433,22 @@ Control loadFile(WINDOW* main)
 
 Control selectResult(WINDOW* main, char* query, int type, int selected)
 {
-    typedef enum type { NAME, MANUFACTURER, UPC, NDB_NUMBER } Type;
     curs_set(0);
     wclear(main);
     Node** results;
     switch (type)
     {
-    case NAME:
-        results = rbSearchString(nameTree, query, 10);
+    case T_NAME:
+        results = rbSearchString(databaseTrees[NAME], query, 10);
         break;
-    case MANUFACTURER:
-        results = rbSearchString(manufacturerTree, query, 10);
+    case T_MANUFACTURER:
+        results = rbSearchString(databaseTrees[MANUFACTURER], query, 10);
         break;
-    case UPC:
-        results = rbSearchString(nameTree, query, 10);
+    case T_UPC:
+        results = rbSearchString(databaseTrees[UPC], query, 10);
         break;
-    case NDB_NUMBER:
-        results = rbSearchString(numberTree, query, 10);
+    case T_NDB:
+        results = rbSearchString(databaseTrees[NUMBER], query, 10);
         break;
     }
     Food* result = results[selected]->food;
@@ -462,7 +462,11 @@ Control selectResult(WINDOW* main, char* query, int type, int selected)
     mvwprintw(main, 5, 0, "Carbohydrates: %0.2lf units", result->carbohydrates);
     mvwprintw(main, 6, 0, "Fat:           %0.2lf units", result->fat);
     mvwprintw(main, 7, 0, "Protein:       %0.2lf units", result->protein);
-    mvwprintw(main, 8, 0, "Serving Size:  %0.2lf %s,", result->servingSize, result->servingUnits);
+    // m means mL
+    if (strcasecmp(result->servingUnits, "m") == 0)
+        mvwprintw(main, 8, 0, "Serving Size:  %0.2lf mL,", result->servingSize);
+    else
+        mvwprintw(main, 8, 0, "Serving Size:  %0.2lf %s,", result->servingSize, result->servingUnits);
     // only display decimal values if needed
     if (result->householdServingSize - (int)(result->householdServingSize))
         mvwprintw(main, 9, 0, "               %0.2lf %s", result->householdServingSize, result->householdServingUnits);
