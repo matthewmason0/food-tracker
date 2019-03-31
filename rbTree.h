@@ -131,6 +131,8 @@ void rbInsertFixup(Tree* tree, Node* node)
 
 char* getStringKey(Node* node, Key key)
 {
+    if (node == NIL)
+        return NULL;
     char* stringKey;
     switch (key)
     {
@@ -215,6 +217,8 @@ void rbInsert(Tree* tree, Node* node)
 
 double getDoubleKey(Node* node, Key key)
 {
+    if (node == NIL)
+        return -1;
     switch (key)
     {
     case CALORIES:

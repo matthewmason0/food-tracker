@@ -27,6 +27,7 @@ Control loadFile(WINDOW* main);
 Control searchUserFile(WINDOW* main);
 
 Control selectResult(WINDOW* main, char* query, int type, int selection);
+Control selectUserResult(WINDOW* main, char* query, int type, int selection);
 char* addEllipses(char* string, int length, char* workingString);
 
 int main(int argc, char** argv)
@@ -142,7 +143,7 @@ int main(int argc, char** argv)
                 case 2: // Load user file
                     c = loadFile(main); break;
                 case 3: // Search user file
-                    c = MENU; break;
+                    c = searchUserFile(main); break;
                 }
                 switch (c)
                 {
@@ -509,6 +510,7 @@ Control loadFile(WINDOW* main)
         if (userFile == NULL)
             return ERROR;
         fileLoaded = true;
+        loadUserDatabase(userFile);
         wattron(main, COLOR_PAIR(GOOD));
         mvwprintw(main, 2, 0, "Welcome back, %s!", userName);
         wattroff(main, COLOR_PAIR(GOOD));
@@ -521,9 +523,7 @@ Control loadFile(WINDOW* main)
 
 Control selectResult(WINDOW* main, char* query, int type, int selected)
 {
-    curs_set(0);
-    wclear(main);
-    Node** results;
+    Node** results = NULL;
     switch (type)
     {
     case T_NAME:
@@ -539,27 +539,35 @@ Control selectResult(WINDOW* main, char* query, int type, int selected)
         results = rbSearchString(databaseTrees[NUMBER], query, 10);
         break;
     }
+    if (results == NULL)
+    {
+        free(results);
+        return SEARCH;
+    }
     Food* result = results[selected]->food;
     free(results);
+    curs_set(0);
+    wclear(main);
     wattron(main, A_UNDERLINE | A_BOLD);
     mvwprintw(main, 0, 0, result->name);
     wattroff(main, A_UNDERLINE | A_BOLD);
     mvwprintw(main, 1, 0, result->manufacturer);
     mvwprintw(main, 2, 0, "NDB No. %s", result->number);
-    mvwprintw(main, 4, 0, "Calories:      %0.2lf units", result->calories);
-    mvwprintw(main, 5, 0, "Carbohydrates: %0.2lf units", result->carbohydrates);
-    mvwprintw(main, 6, 0, "Fat:           %0.2lf units", result->fat);
-    mvwprintw(main, 7, 0, "Protein:       %0.2lf units", result->protein);
     // m means mL
     if (strcasecmp(result->servingUnits, "m") == 0)
-        mvwprintw(main, 8, 0, "Serving Size:  %0.2lf mL,", result->servingSize);
+        mvwprintw(main, 4, 0, "Serving Size:  %0.2lf mL,", result->servingSize);
     else
-        mvwprintw(main, 8, 0, "Serving Size:  %0.2lf %s,", result->servingSize, result->servingUnits);
+        mvwprintw(main, 4, 0, "Serving Size:  %0.2lf %s,", result->servingSize, result->servingUnits);
     // only display decimal values if needed
     if (result->householdServingSize - (int)(result->householdServingSize))
-        mvwprintw(main, 9, 0, "               %0.2lf %s", result->householdServingSize, result->householdServingUnits);
+        mvwprintw(main, 5, 0, "               %0.2lf %s", result->householdServingSize, result->householdServingUnits);
     else
-        mvwprintw(main, 9, 0, "               %0.lf %s", result->householdServingSize, result->householdServingUnits);
+        mvwprintw(main, 5, 0, "               %0.lf %s", result->householdServingSize, result->householdServingUnits);
+    mvwprintw(main, 6, 0, "Calories:      %0.2lf kcal", result->calories);
+    mvwprintw(main, 7, 0, "Carbohydrates: %0.2lf g", result->carbohydrates);
+    mvwprintw(main, 8, 0, "Fat:           %0.2lf g", result->fat);
+    mvwprintw(main, 9, 0, "Protein:       %0.2lf g", result->protein);
+
 
     char list[2][18] = { "Back to search", "Save to user file" };
     int i = 0;
@@ -697,6 +705,15 @@ Control searchUserFile(WINDOW* main)
                 waddstr(main, "  ");
             }
             wrefresh(main);
+            i = 0;
+            query[0] = '\0';
+            wclear(queryWin);
+            wclear(resultsWin);
+            box(queryWin, 0, 0);
+            box(resultsWin, 0, 0);
+            wrefresh(queryWin);
+            wrefresh(resultsWin);
+            wmove(queryWin, 1, 1);
             break;
         case KEY_UP:
             if (highlightedItem != 0)
@@ -711,23 +728,50 @@ Control searchUserFile(WINDOW* main)
         case 10: // ENTER
             if (i > 0)
             {
-                if (selectResult(main, query, selectedType, highlightedItem) == QUIT)
+                if (selectUserResult(main, query, selectedType, highlightedItem) == QUIT)
                     return QUIT;
                 curs_set(1);
                 wclear(main);
                 mvwprintw(main, 0, 0, "Use TAB to change search type, UP/DOWN to highlight results, and ENTER to select. Press ESC to return to menu.");
+                wmove(main, 3, 0);
+                for (Type type = T_NAME; type <= T_NDB; type++)
+                {
+                    if (type == selectedType)
+                        wattron(main, COLOR_PAIR(HIGHLIGHTED_INACTIVE));
+                    waddstr(main, types[type]);
+                    wattroff(main, COLOR_PAIR(HIGHLIGHTED_INACTIVE));
+                    waddstr(main, "  ");
+                }
                 wrefresh(main);
                 box(queryWin, 0, 0);
                 box(resultsWin, 0, 0);
+                wrefresh(queryWin);
+                wrefresh(resultsWin);
             }
             break;
         default:
-            if (i < getmaxx(queryWin) - 3 && isprint(ch))
+            switch (selectedType)
             {
-                waddch(queryWin, ch);
-                query[i] = (char) ch;
-                query[i + 1] = '\0';
-                i++;
+            case T_NAME:
+            case T_MANUFACTURER:
+                if (i < getmaxx(queryWin) - 3 && isprint(ch))
+                {
+                    waddch(queryWin, ch);
+                    query[i] = (char) ch;
+                    query[i + 1] = '\0';
+                    i++;
+                }
+                break;
+            case T_UPC:
+            case T_NDB:
+                if (i < getmaxx(queryWin) - 3 && isdigit(ch))
+                {
+                    waddch(queryWin, ch);
+                    query[i] = (char) ch;
+                    query[i + 1] = '\0';
+                    i++;
+                }
+                break;
             }
             break;
         }
@@ -740,32 +784,53 @@ Control searchUserFile(WINDOW* main)
             switch (selectedType)
             {
             case T_NAME:
-                results = rbSearchString(databaseTrees[NAME], query, 10); break;
+                results = rbSearchString(userTrees[NAME], query, 10); break;
             case T_MANUFACTURER:
-                results = rbSearchString(databaseTrees[MANUFACTURER], query, 10); break;
+                results = rbSearchString(userTrees[MANUFACTURER], query, 10); break;
             case T_UPC:
-                results = rbSearchString(databaseTrees[UPC], query, 10); break;
+                results = rbSearchString(userTrees[UPC], query, 10); break;
             case T_NDB:
-                results = rbSearchString(databaseTrees[NUMBER], query, 10); break;
+                results = rbSearchString(userTrees[NUMBER], query, 10); break;
             }
             if (results == NULL)
-                return ERROR;
-            for (int item = 0; item < 10 && results[item] != NIL; item++)
+                mvwprintw(resultsWin, 1, 1, "No results");
+            else
             {
-                if (item == highlightedItem)
-                    wattron(resultsWin, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
-                switch (selectedType)
+                int width = getmaxx(resultsWin) - 2;
+                char* workingString = malloc(getmaxx(resultsWin));
+                for (int item = 0; item < 10 && results[item] != NIL; item++)
                 {
-                case T_NAME:
-                    mvwprintw(resultsWin, item + 1, 1, results[item]->food->name); break;
-                case T_MANUFACTURER:
-                    mvwprintw(resultsWin, item + 1, 1, results[item]->food->name); break;
-                case T_UPC:
-                    mvwprintw(resultsWin, item + 1, 1, results[item]->food->name); break;
-                case T_NDB:
-                    mvwprintw(resultsWin, item + 1, 1, results[item]->food->name); break;
+                    if (item == highlightedItem)
+                        wattron(resultsWin, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
+                    switch (selectedType)
+                    {
+                    case T_NAME:
+                        mvwprintw(resultsWin, item + 1, 1, addEllipses(results[item]->food->name, width, workingString));
+                        break;
+                    case T_MANUFACTURER:
+                        {
+                            char temp[strlen(results[item]->food->manufacturer) + strlen(results[item]->food->name) + 4];
+                            sprintf(temp, "%s | %s", results[item]->food->manufacturer, results[item]->food->name);
+                            mvwprintw(resultsWin, item + 1, 1, addEllipses(temp, width, workingString));
+                        }
+                        break;
+                    case T_UPC:
+                        {
+                            char temp[strlen(results[item]->food->upc) + strlen(results[item]->food->name) + 4];
+                            sprintf(temp, "%s | %s", results[item]->food->upc, results[item]->food->name);
+                            mvwprintw(resultsWin, item + 1, 1, addEllipses(temp, width, workingString));
+                        }
+                        break;
+                    case T_NDB:
+                        {
+                            char temp[strlen(results[item]->food->number) + strlen(results[item]->food->name) + 4];
+                            sprintf(temp, "%s | %s", results[item]->food->number, results[item]->food->name);
+                            mvwprintw(resultsWin, item + 1, 1, addEllipses(temp, width, workingString));
+                        }
+                        break;
+                    }
+                    wattroff(resultsWin, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
                 }
-                wattroff(resultsWin, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
             }
             free(results);
         }
@@ -778,4 +843,9 @@ Control searchUserFile(WINDOW* main)
         ch = wgetch(queryWin);
     }
     return QUIT;
+}
+
+Control selectUserResult(WINDOW* main, char* query, int type, int selected)
+{
+
 }

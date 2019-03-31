@@ -6,8 +6,8 @@ rm -rf setup
 mkdir setup
 cd setup
 
-#cp ../../BFPD_csv_07132018.zip .
-wget https://www.ars.usda.gov/ARSUserFiles/80400525/Data/BFPDB/BFPD_csv_07132018.zip
+cp ../../BFPD_csv_07132018.zip .
+#wget https://www.ars.usda.gov/ARSUserFiles/80400525/Data/BFPDB/BFPD_csv_07132018.zip
 unzip BFPD_csv_07132018.zip
 
 grep -e "Carbohydrate" Nutrients.csv|sed 's/\",\"/~/g'|sed 's/^"//g' |sed 's/Carbohydrate, by difference/Carbohydrate/g' |cut -d~ -f1,5|sort>carbs
