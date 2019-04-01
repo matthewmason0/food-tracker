@@ -11,7 +11,7 @@
 #include <ncurses.h>
 #include "database.h"
 
-typedef enum control { QUIT, ERROR, MENU, SEARCH } Control;
+typedef enum control { QUIT, ERROR, MENU, SEARCH, SELECT } Control;
 
 typedef enum colors { NORMAL, HIGHLIGHTED_ACTIVE, HIGHLIGHTED_INACTIVE, BAD, GOOD } Colors;
 
@@ -26,6 +26,7 @@ Control createFile(WINDOW* main);
 Control loadFile(WINDOW* main);
 Control searchUserFile(WINDOW* main);
 
+Control displayResult(WINDOW* main, char* query, int type, int selection, Food** result);
 Control selectResult(WINDOW* main, char* query, int type, int selection);
 Control selectUserResult(WINDOW* main, char* query, int type, int selection);
 char* addEllipses(char* string, int length, char* workingString);
@@ -62,6 +63,43 @@ int main(int argc, char** argv)
     destroyDatabase();
 */
 
+    userFile = fopen("matt.log", "w+");
+    userName = malloc(5);
+    userName[0] = '\0';
+    strcpy(userName, "matt");
+    //loadUserDatabase(userFile);
+    char filename[strlen(userName) + 5];
+    filename[0] = '\0';
+    sprintf(filename, "%s.log", userName);
+    FILE* copy = fopen("~tempfile", "w");
+    if (copy == NULL)
+        return ERROR;
+    if (fseek(userFile, 0, SEEK_SET))
+        return ERROR;
+    char* line = readLine(userFile);
+    while(line[0] != '\0')
+    {
+        char* temp = malloc(strlen(line) + 1);
+        temp[0] = '\0';
+        strcpy(temp, line);
+        if (strcmp(strsep(&temp, "~"), "45080500") != 0)
+            fprintf(copy, "%s\n", line);
+        free(line);
+        //free(temp);
+        line = readLine(userFile);
+    }
+    if (line[0] == '\0')
+        return ERROR;
+    fclose(userFile);
+    fclose(copy);
+    remove(filename);
+    rename("~tempfile", filename);
+    userFile = fopen(filename, "a+");
+    if (userFile == NULL)
+        ((Food*)NULL)->name;
+
+
+/*
     initscr();
     noecho();
     curs_set(0);
@@ -137,13 +175,19 @@ int main(int argc, char** argv)
                 switch (i)
                 {
                 case 0: // Search for a food
-                    c = search(main); break;
+                    c = search(main);
+                    break;
                 case 1: // Create user file
-                    c = createFile(main); break;
+                    c = createFile(main);
+                    break;
                 case 2: // Load user file
-                    c = loadFile(main); break;
+                    c = loadFile(main);
+                    break;
                 case 3: // Search user file
-                    c = searchUserFile(main); break;
+                    loadUserDatabase(userFile);
+                    c = searchUserFile(main);
+                    destroyUserDatabase();
+                    break;
                 }
                 switch (c)
                 {
@@ -185,7 +229,9 @@ int main(int argc, char** argv)
         fclose(userFile);
         free(userName);
     }
+    destroyDatabase();
     return QUIT;
+*/
 }
 
 char* addEllipses(char* string, int length, char* workingString)
@@ -506,11 +552,10 @@ Control loadFile(WINDOW* main)
     }
     else
     {
-        userFile = fopen(filename, "a");
+        userFile = fopen(filename, "a+");
         if (userFile == NULL)
             return ERROR;
         fileLoaded = true;
-        loadUserDatabase(userFile);
         wattron(main, COLOR_PAIR(GOOD));
         mvwprintw(main, 2, 0, "Welcome back, %s!", userName);
         wattroff(main, COLOR_PAIR(GOOD));
@@ -521,7 +566,7 @@ Control loadFile(WINDOW* main)
     return MENU;
 }
 
-Control selectResult(WINDOW* main, char* query, int type, int selected)
+Control displayResult(WINDOW* main, char* query, int type, int selected, Food** result)
 {
     Node** results = NULL;
     switch (type)
@@ -544,30 +589,38 @@ Control selectResult(WINDOW* main, char* query, int type, int selected)
         free(results);
         return SEARCH;
     }
-    Food* result = results[selected]->food;
+    *result = results[selected]->food;
     free(results);
     curs_set(0);
     wclear(main);
     wattron(main, A_UNDERLINE | A_BOLD);
-    mvwprintw(main, 0, 0, result->name);
+    mvwprintw(main, 0, 0, (*result)->name);
     wattroff(main, A_UNDERLINE | A_BOLD);
-    mvwprintw(main, 1, 0, result->manufacturer);
-    mvwprintw(main, 2, 0, "NDB No. %s", result->number);
+    mvwprintw(main, 1, 0, (*result)->manufacturer);
+    mvwprintw(main, 2, 0, "NDB No. %s", (*result)->number);
     // m means mL
-    if (strcasecmp(result->servingUnits, "m") == 0)
-        mvwprintw(main, 4, 0, "Serving Size:  %0.2lf mL,", result->servingSize);
+    if (strcasecmp((*result)->servingUnits, "m") == 0)
+        mvwprintw(main, 4, 0, "Serving Size:  %0.2lf mL,", (*result)->servingSize);
     else
-        mvwprintw(main, 4, 0, "Serving Size:  %0.2lf %s,", result->servingSize, result->servingUnits);
+        mvwprintw(main, 4, 0, "Serving Size:  %0.2lf %s,", (*result)->servingSize, (*result)->servingUnits);
     // only display decimal values if needed
-    if (result->householdServingSize - (int)(result->householdServingSize))
-        mvwprintw(main, 5, 0, "               %0.2lf %s", result->householdServingSize, result->householdServingUnits);
+    if ((*result)->householdServingSize - (int)((*result)->householdServingSize))
+        mvwprintw(main, 5, 0, "               %0.2lf %s", (*result)->householdServingSize, (*result)->householdServingUnits);
     else
-        mvwprintw(main, 5, 0, "               %0.lf %s", result->householdServingSize, result->householdServingUnits);
-    mvwprintw(main, 6, 0, "Calories:      %0.2lf kcal", result->calories);
-    mvwprintw(main, 7, 0, "Carbohydrates: %0.2lf g", result->carbohydrates);
-    mvwprintw(main, 8, 0, "Fat:           %0.2lf g", result->fat);
-    mvwprintw(main, 9, 0, "Protein:       %0.2lf g", result->protein);
+        mvwprintw(main, 5, 0, "               %0.lf %s", (*result)->householdServingSize, (*result)->householdServingUnits);
+    mvwprintw(main, 6, 0, "Calories:      %0.2lf kcal", (*result)->calories);
+    mvwprintw(main, 7, 0, "Carbohydrates: %0.2lf g", (*result)->carbohydrates);
+    mvwprintw(main, 8, 0, "Fat:           %0.2lf g", (*result)->fat);
+    mvwprintw(main, 9, 0, "Protein:       %0.2lf g", (*result)->protein);
 
+    return SELECT;
+}
+
+Control selectResult(WINDOW* main, char* query, int type, int selected)
+{
+    Food* result;
+    if (displayResult(main, query, type, selected, &result) == SEARCH)
+        return SEARCH;
 
     char list[2][18] = { "Back to search", "Save to user file" };
     int i = 0;
@@ -604,17 +657,18 @@ Control selectResult(WINDOW* main, char* query, int type, int selected)
             if (i == 0) // Back to search
                 return SEARCH;
             // Save to user file
-            fprintf(userFile, "%s~%s~%s~%lf~%lf~%lf~%lf~%lf~%s~%lf~%s\n", result->number,
-                                                                          result->name,
-                                                                          result->manufacturer,
-                                                                          result->calories,
-                                                                          result->carbohydrates,
-                                                                          result->fat,
-                                                                          result->protein,
-                                                                          result->servingSize,
-                                                                          result->servingUnits,
-                                                                          result->householdServingSize,
-                                                                          result->householdServingUnits);
+            fprintf(userFile, "%s~%s~%s~%s~%lf~%lf~%lf~%lf~%lf~%s~%lf~%s\n", result->number,
+                                                                             result->name,
+                                                                             result->upc,
+                                                                             result->manufacturer,
+                                                                             result->calories,
+                                                                             result->carbohydrates,
+                                                                             result->fat,
+                                                                             result->protein,
+                                                                             result->servingSize,
+                                                                             result->servingUnits,
+                                                                             result->householdServingSize,
+                                                                             result->householdServingUnits);
             wattron(main, COLOR_PAIR(GOOD));
             mvwprintw(main, 14, 0, "Food saved!");
             wattroff(main, COLOR_PAIR(GOOD));
@@ -728,8 +782,9 @@ Control searchUserFile(WINDOW* main)
         case 10: // ENTER
             if (i > 0)
             {
-                if (selectUserResult(main, query, selectedType, highlightedItem) == QUIT)
-                    return QUIT;
+                Control c = selectUserResult(main, query, selectedType, highlightedItem);
+                if (c == QUIT || c == ERROR)
+                    return c;
                 curs_set(1);
                 wclear(main);
                 mvwprintw(main, 0, 0, "Use TAB to change search type, UP/DOWN to highlight results, and ENTER to select. Press ESC to return to menu.");
@@ -847,5 +902,99 @@ Control searchUserFile(WINDOW* main)
 
 Control selectUserResult(WINDOW* main, char* query, int type, int selected)
 {
+    Food* result;
+    if (displayResult(main, query, type, selected, &result) == SEARCH)
+        return SEARCH;
 
+    char list[2][25] = { "Back to search", "Delete from user file" };
+    int i = 0;
+
+    wattron(main, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
+    mvwaddstr(main, 11, 0, list[0]);
+    wattroff(main, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
+    if (!fileLoaded)
+        wattron(main, A_DIM);
+    mvwaddstr(main, 12, 0, list[1]);
+    wattroff(main, A_DIM);
+    if (fileLoaded)
+        wprintw(main, " | User: %s", userName);
+
+    wrefresh(main);
+
+    i = 0;
+
+    int ch = wgetch(main);
+    while (ch != 'q')
+    {
+        switch (ch)
+        {
+        case KEY_UP:
+            i -= (i == 0) ? 0 : 1;
+            break;
+        case KEY_DOWN:
+            if (fileLoaded)
+                i += (i == 1) ? 0 : 1;
+            else
+                i += (i == 0) ? 0 : 1;
+            break;
+        case 10: // ENTER
+            {
+                if (i == 0) // Back to search
+                    return SEARCH;
+                // Delete from user file
+                // file manipulation code from https://www.sanfoundry.com/c-program-delete-line-text-file/
+                char filename[strlen(userName) + 5];
+                filename[0] = '\0';
+                sprintf(filename, "%s.log", userName);
+                FILE* copy = fopen("~tempfile", "w");
+                if (copy == NULL)
+                    return ERROR;
+                rewind(userFile);
+                char* line = readLine(userFile);
+                while(line[0] != '\0')
+                {
+                    char* temp = malloc(strlen(line) + 1);
+                    temp[0] = '\0';
+                    strcpy(temp, line);
+                    if (strcmp(strsep(&temp, "~"), result->number) != 0)
+                        fprintf(copy, "%s\n", line);
+                    free(line);
+                    //free(temp);
+                    line = readLine(userFile);
+                }
+                if (line[0] == '\0')
+                    return ERROR;
+                fclose(userFile);
+                fclose(copy);
+                remove(filename);
+                rename("~tempfile", filename);
+                userFile = fopen(filename, "a+");
+                if (userFile == NULL)
+                    ((Food*)NULL)->name;
+
+                wattron(main, COLOR_PAIR(GOOD));
+                mvwprintw(main, 14, 0, "Food saved!");
+                wattroff(main, COLOR_PAIR(GOOD));
+                wrefresh(main);
+                sleep(1);
+                return SEARCH;
+            }
+        }
+
+        for (int option = 0; option < 2; option++)
+        {
+            if (option == i)
+                wattron(main, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
+            if (option == 1 && !fileLoaded)
+                wattron(main, A_DIM);
+            mvwaddstr(main, option + 11, 0, list[option]);
+            if (option == 1 && fileLoaded)
+                wprintw(main, " | User: %s", userName);
+            wattroff(main, COLOR_PAIR(HIGHLIGHTED_ACTIVE));
+            wattroff(main, A_DIM);
+        }
+
+        ch = wgetch(main);
+    }
+    return QUIT;
 }

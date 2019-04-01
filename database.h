@@ -111,6 +111,7 @@ int loadUserDatabase(FILE* userFile)
     for (Key key = NUMBER; key <= HOUSEHOLD_SERVING_UNITS; key++)
         userTrees[key] = rbNewTree(key);
 
+    rewind(userFile);
     char* line = readLine(userFile);
     while(line[0] != '\0')
     {
@@ -143,8 +144,15 @@ int loadUserDatabase(FILE* userFile)
         for (Key key = NUMBER; key <= HOUSEHOLD_SERVING_UNITS; key++)
             rbInsert(userTrees[key], newNode(foodItem));
 
+        free(line);
         line = readLine(userFile);
     }
+}
+
+void destroyUserDatabase()
+{
+    for (Key key = NUMBER; key <= HOUSEHOLD_SERVING_UNITS; key++)
+        rbDeleteTree(userTrees[key], key == HOUSEHOLD_SERVING_UNITS);
 }
 
 #endif //FOOD_TRACKER_DATABASE_H
