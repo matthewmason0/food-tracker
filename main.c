@@ -959,7 +959,7 @@ Control selectUserResult(WINDOW* main, char* query, Type type, int selected)
                     temp[0] = '\0';
                     strcpy(temp, line);
                     mvwprintw(main, 14, 0, result->food->number);
-                    if (strcmp(strsep(&temp, "~"), "45322767") != 0)
+                    if (strcmp(strsep(&temp, "~"), result->food->number) != 0)
                         fprintf(copy, "%s\n", line);
                     free(line);
                     //free(temp);
@@ -973,7 +973,8 @@ Control selectUserResult(WINDOW* main, char* query, Type type, int selected)
                 if (userFile == NULL)
                     return ERROR;
 
-                // delete result from trees
+                destroyUserDatabase();
+                loadUserDatabase(userFile);
 
                 wattron(main, COLOR_PAIR(GOOD));
                 mvwprintw(main, 14, 0, "Food deleted!");

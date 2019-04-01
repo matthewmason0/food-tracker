@@ -11,8 +11,8 @@
 #include "food.h"
 #include "rbTree.h"
 
-Tree* databaseTrees[HOUSEHOLD_SERVING_UNITS + 1];
-Tree* userTrees[HOUSEHOLD_SERVING_UNITS + 1];
+Tree* databaseTrees[MANUFACTURER + 1];
+Tree* userTrees[MANUFACTURER + 1];
 
 char* readLine(FILE* file)
 {
@@ -108,7 +108,7 @@ void findManufacturer(char* manufacturer)
 
 int loadUserDatabase(FILE* userFile)
 {
-    for (Key key = NUMBER; key <= HOUSEHOLD_SERVING_UNITS; key++)
+    for (Key key = NUMBER; key <= MANUFACTURER; key++)
         userTrees[key] = rbNewTree(key);
 
     rewind(userFile);
@@ -141,7 +141,7 @@ int loadUserDatabase(FILE* userFile)
                                  householdServingSize,
                                  householdServingUnits);
 
-        for (Key key = NUMBER; key <= HOUSEHOLD_SERVING_UNITS; key++)
+        for (Key key = NUMBER; key <= MANUFACTURER; key++)
             rbInsert(userTrees[key], newNode(foodItem));
 
         free(line);
@@ -151,8 +151,8 @@ int loadUserDatabase(FILE* userFile)
 
 void destroyUserDatabase()
 {
-    for (Key key = NUMBER; key <= HOUSEHOLD_SERVING_UNITS; key++)
-        rbDeleteTree(userTrees[key], key == HOUSEHOLD_SERVING_UNITS);
+    for (Key key = NUMBER; key <= MANUFACTURER; key++)
+        rbDeleteTree(userTrees[key], key == MANUFACTURER);
 }
 
 #endif //FOOD_TRACKER_DATABASE_H

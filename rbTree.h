@@ -215,6 +215,137 @@ void rbInsert(Tree* tree, Node* node)
     rbInsertFixup(tree, node);
 }
 
+// page 323
+void rbTransplant(Tree* tree, Node* oldNode, Node* newNode)
+{
+    if (oldNode->parent == NIL)
+        tree->root = newNode;
+    else if (oldNode == oldNode->parent->left)
+        oldNode->parent->left = newNode;
+    else
+        oldNode->parent->right = newNode;
+    newNode->parent = oldNode->parent;
+}
+
+Node* rbMinimum(Node* node)
+{
+    while (node->left != NIL)
+        node = node->left;
+    return node;
+}
+
+// page 326
+void rbDeleteFixup(Tree* tree, Node* node)
+{
+    while (node != tree->root && node->color == BLACK)
+    {
+        // if node is a left child
+        if (node == node->parent->left)
+        {
+            Node* w = node->parent->right;
+            if (w->color == RED)
+            {
+                w->color = BLACK;
+                node->parent->color = RED;
+                rbLeftRotate(tree, node->parent);
+                w = node->parent->right;
+            }
+            if (w->left->color == BLACK && w->right->color == BLACK)
+            {
+                w->color = RED;
+                node = node->parent;
+            }
+            else if (w->right->color == BLACK)
+            {
+                w->left->color = BLACK;
+                w->color = RED;
+                rbRightRotate(tree, w);
+                w = node->parent->right;
+            }
+            else
+            {
+                w->color = node->parent->color;
+                node->parent->color = BLACK;
+                w->right->color = BLACK;
+                rbLeftRotate(tree, node->parent);
+                node = tree->root;
+            }
+        }
+        else // node is a right child
+        {
+            Node* w = node->parent->left;
+            if (w->color == RED)
+            {
+                w->color = BLACK;
+                node->parent->color = RED;
+                rbRightRotate(tree, node->parent);
+                w = node->parent->left;
+            }
+            if (w->left->color == BLACK && w->right->color == BLACK)
+            {
+                w->color = RED;
+                node = node->parent;
+            }
+            else if (w->left->color == BLACK)
+            {
+                w->right->color = BLACK;
+                w->color = RED;
+                rbLeftRotate(tree, w);
+                w = node->parent->left;
+            }
+            else
+            {
+                w->color = node->parent->color;
+                node->parent->color = BLACK;
+                w->left->color = BLACK;
+                rbRightRotate(tree, node->parent);
+                node = tree->root;
+            }
+        }
+    }
+    node->color = BLACK;
+}
+
+// page 324
+void rbDelete(Tree* tree, Node* node)
+{
+    Node* y = node;
+    Color oldColor = y->color;
+    Node* x;
+    if (node->left == NIL)
+    {
+        x = node->right;
+        rbTransplant(tree, node, node->right);
+    }
+    else if (node->right == NIL)
+    {
+        x = node->left;
+        rbTransplant(tree, node, node->left);
+    }
+    else
+    {
+        y = rbMinimum(node->right);
+        oldColor = y->color;
+        x = y->right;
+        if (y->parent == node)
+            x->parent = y;
+        else
+        {
+            rbTransplant(tree, y, y->right);
+            y->right = node->right;
+            y->right->parent = y;
+        }
+        rbTransplant(tree, node, y);
+        y->left = node->left;
+        y->left->parent = y;
+        y->color = node->color;
+    }
+    if (oldColor == BLACK)
+        rbDeleteFixup(tree, x);
+    deleteFood(node->food);
+    free(node);
+}
+
 double getDoubleKey(Node* node, Key key)
 {
     if (node == NIL)
@@ -242,12 +373,7 @@ Node* rbGetSuccessor(Node *node)
 {
     // if the node has a right subtree, find its leftmost node
     if (node->right != NIL)
-    {
-        node = node->right;
-        while (node->left != NIL)
-            node = node->left;
-        return node;
-    }
+        return rbMinimum(node->right);
 
     // else, look up the tree for a left child and return its parent
     Node* parent = node->parent;
