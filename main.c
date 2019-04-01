@@ -26,14 +26,17 @@ Control createFile(WINDOW* main);
 Control loadFile(WINDOW* main);
 Control searchUserFile(WINDOW* main);
 
-Control displayResult(WINDOW* main, char* query, int type, int selection, Food** result);
-Control selectResult(WINDOW* main, char* query, int type, int selection);
-Control selectUserResult(WINDOW* main, char* query, int type, int selection);
+Control displayResult(WINDOW* main, Tree** database, char* query, Type type, int selection, Node** result);
+Control selectResult(WINDOW* main, char* query, Type type, int selection);
+Control selectUserResult(WINDOW* main, char* query, Type type, int selection);
 char* addEllipses(char* string, int length, char* workingString);
+
+//#define TEST2
+#define NORM
 
 int main(int argc, char** argv)
 {
-/*
+#ifdef TEST1
     clock_t t;
     t = clock();
     if (!populateDatabase("food_database.csv"))
@@ -61,9 +64,10 @@ int main(int argc, char** argv)
 //    char trash[5];
 //    scanf("%s", trash);
     destroyDatabase();
-*/
+#endif
 
-    userFile = fopen("matt.log", "w+");
+#ifdef TEST2
+    userFile = fopen("matt.log", "a+");
     userName = malloc(5);
     userName[0] = '\0';
     strcpy(userName, "matt");
@@ -74,32 +78,30 @@ int main(int argc, char** argv)
     FILE* copy = fopen("~tempfile", "w");
     if (copy == NULL)
         return ERROR;
-    if (fseek(userFile, 0, SEEK_SET))
-        return ERROR;
+    rewind(userFile);
     char* line = readLine(userFile);
     while(line[0] != '\0')
     {
         char* temp = malloc(strlen(line) + 1);
         temp[0] = '\0';
         strcpy(temp, line);
-        if (strcmp(strsep(&temp, "~"), "45080500") != 0)
+        if (strcmp(strsep(&temp, "~"), "45322767") != 0)
             fprintf(copy, "%s\n", line);
         free(line);
         //free(temp);
         line = readLine(userFile);
     }
-    if (line[0] == '\0')
-        return ERROR;
     fclose(userFile);
     fclose(copy);
     remove(filename);
     rename("~tempfile", filename);
     userFile = fopen(filename, "a+");
     if (userFile == NULL)
-        ((Food*)NULL)->name;
+        return ERROR;
+#endif
 
 
-/*
+#ifdef NORM
     initscr();
     noecho();
     curs_set(0);
@@ -231,7 +233,7 @@ int main(int argc, char** argv)
     }
     destroyDatabase();
     return QUIT;
-*/
+#endif
 }
 
 char* addEllipses(char* string, int length, char* workingString)
@@ -566,22 +568,22 @@ Control loadFile(WINDOW* main)
     return MENU;
 }
 
-Control displayResult(WINDOW* main, char* query, int type, int selected, Food** result)
+Control displayResult(WINDOW* main, Tree** database, char* query, Type type, int selected, Node** result)
 {
     Node** results = NULL;
     switch (type)
     {
     case T_NAME:
-        results = rbSearchString(databaseTrees[NAME], query, 10);
+        results = rbSearchString(database[NAME], query, 10);
         break;
     case T_MANUFACTURER:
-        results = rbSearchString(databaseTrees[MANUFACTURER], query, 10);
+        results = rbSearchString(database[MANUFACTURER], query, 10);
         break;
     case T_UPC:
-        results = rbSearchString(databaseTrees[UPC], query, 10);
+        results = rbSearchString(database[UPC], query, 10);
         break;
     case T_NDB:
-        results = rbSearchString(databaseTrees[NUMBER], query, 10);
+        results = rbSearchString(database[NUMBER], query, 10);
         break;
     }
     if (results == NULL)
@@ -589,37 +591,37 @@ Control displayResult(WINDOW* main, char* query, int type, int selected, Food** 
         free(results);
         return SEARCH;
     }
-    *result = results[selected]->food;
+    *result = results[selected];
     free(results);
     curs_set(0);
     wclear(main);
     wattron(main, A_UNDERLINE | A_BOLD);
-    mvwprintw(main, 0, 0, (*result)->name);
+    mvwprintw(main, 0, 0, (*result)->food->name);
     wattroff(main, A_UNDERLINE | A_BOLD);
-    mvwprintw(main, 1, 0, (*result)->manufacturer);
-    mvwprintw(main, 2, 0, "NDB No. %s", (*result)->number);
+    mvwprintw(main, 1, 0, (*result)->food->manufacturer);
+    mvwprintw(main, 2, 0, "NDB No. %s", (*result)->food->number);
     // m means mL
-    if (strcasecmp((*result)->servingUnits, "m") == 0)
-        mvwprintw(main, 4, 0, "Serving Size:  %0.2lf mL,", (*result)->servingSize);
+    if (strcasecmp((*result)->food->servingUnits, "m") == 0)
+        mvwprintw(main, 4, 0, "Serving Size:  %0.2lf mL,", (*result)->food->servingSize);
     else
-        mvwprintw(main, 4, 0, "Serving Size:  %0.2lf %s,", (*result)->servingSize, (*result)->servingUnits);
+        mvwprintw(main, 4, 0, "Serving Size:  %0.2lf %s,", (*result)->food->servingSize, (*result)->food->servingUnits);
     // only display decimal values if needed
-    if ((*result)->householdServingSize - (int)((*result)->householdServingSize))
-        mvwprintw(main, 5, 0, "               %0.2lf %s", (*result)->householdServingSize, (*result)->householdServingUnits);
+    if ((*result)->food->householdServingSize - (int)((*result)->food->householdServingSize))
+        mvwprintw(main, 5, 0, "               %0.2lf %s", (*result)->food->householdServingSize, (*result)->food->householdServingUnits);
     else
-        mvwprintw(main, 5, 0, "               %0.lf %s", (*result)->householdServingSize, (*result)->householdServingUnits);
-    mvwprintw(main, 6, 0, "Calories:      %0.2lf kcal", (*result)->calories);
-    mvwprintw(main, 7, 0, "Carbohydrates: %0.2lf g", (*result)->carbohydrates);
-    mvwprintw(main, 8, 0, "Fat:           %0.2lf g", (*result)->fat);
-    mvwprintw(main, 9, 0, "Protein:       %0.2lf g", (*result)->protein);
+        mvwprintw(main, 5, 0, "               %0.lf %s", (*result)->food->householdServingSize, (*result)->food->householdServingUnits);
+    mvwprintw(main, 6, 0, "Calories:      %0.2lf kcal", (*result)->food->calories);
+    mvwprintw(main, 7, 0, "Carbohydrates: %0.2lf g", (*result)->food->carbohydrates);
+    mvwprintw(main, 8, 0, "Fat:           %0.2lf g", (*result)->food->fat);
+    mvwprintw(main, 9, 0, "Protein:       %0.2lf g", (*result)->food->protein);
 
     return SELECT;
 }
 
-Control selectResult(WINDOW* main, char* query, int type, int selected)
+Control selectResult(WINDOW* main, char* query, Type type, int selected)
 {
-    Food* result;
-    if (displayResult(main, query, type, selected, &result) == SEARCH)
+    Node* result;
+    if (displayResult(main, databaseTrees, query, type, selected, &result) == SEARCH)
         return SEARCH;
 
     char list[2][18] = { "Back to search", "Save to user file" };
@@ -657,18 +659,18 @@ Control selectResult(WINDOW* main, char* query, int type, int selected)
             if (i == 0) // Back to search
                 return SEARCH;
             // Save to user file
-            fprintf(userFile, "%s~%s~%s~%s~%lf~%lf~%lf~%lf~%lf~%s~%lf~%s\n", result->number,
-                                                                             result->name,
-                                                                             result->upc,
-                                                                             result->manufacturer,
-                                                                             result->calories,
-                                                                             result->carbohydrates,
-                                                                             result->fat,
-                                                                             result->protein,
-                                                                             result->servingSize,
-                                                                             result->servingUnits,
-                                                                             result->householdServingSize,
-                                                                             result->householdServingUnits);
+            fprintf(userFile, "%s~%s~%s~%s~%lf~%lf~%lf~%lf~%lf~%s~%lf~%s\n", result->food->number,
+                                                                             result->food->name,
+                                                                             result->food->upc,
+                                                                             result->food->manufacturer,
+                                                                             result->food->calories,
+                                                                             result->food->carbohydrates,
+                                                                             result->food->fat,
+                                                                             result->food->protein,
+                                                                             result->food->servingSize,
+                                                                             result->food->servingUnits,
+                                                                             result->food->householdServingSize,
+                                                                             result->food->householdServingUnits);
             wattron(main, COLOR_PAIR(GOOD));
             mvwprintw(main, 14, 0, "Food saved!");
             wattroff(main, COLOR_PAIR(GOOD));
@@ -900,10 +902,10 @@ Control searchUserFile(WINDOW* main)
     return QUIT;
 }
 
-Control selectUserResult(WINDOW* main, char* query, int type, int selected)
+Control selectUserResult(WINDOW* main, char* query, Type type, int selected)
 {
-    Food* result;
-    if (displayResult(main, query, type, selected, &result) == SEARCH)
+    Node* result;
+    if (displayResult(main, userTrees, query, type, selected, &result) == SEARCH)
         return SEARCH;
 
     char list[2][25] = { "Back to search", "Delete from user file" };
@@ -956,24 +958,25 @@ Control selectUserResult(WINDOW* main, char* query, int type, int selected)
                     char* temp = malloc(strlen(line) + 1);
                     temp[0] = '\0';
                     strcpy(temp, line);
-                    if (strcmp(strsep(&temp, "~"), result->number) != 0)
+                    mvwprintw(main, 14, 0, result->food->number);
+                    if (strcmp(strsep(&temp, "~"), "45322767") != 0)
                         fprintf(copy, "%s\n", line);
                     free(line);
                     //free(temp);
                     line = readLine(userFile);
                 }
-                if (line[0] == '\0')
-                    return ERROR;
                 fclose(userFile);
                 fclose(copy);
                 remove(filename);
                 rename("~tempfile", filename);
                 userFile = fopen(filename, "a+");
                 if (userFile == NULL)
-                    ((Food*)NULL)->name;
+                    return ERROR;
+
+                // delete result from trees
 
                 wattron(main, COLOR_PAIR(GOOD));
-                mvwprintw(main, 14, 0, "Food saved!");
+                mvwprintw(main, 14, 0, "Food deleted!");
                 wattroff(main, COLOR_PAIR(GOOD));
                 wrefresh(main);
                 sleep(1);
