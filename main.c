@@ -31,77 +31,8 @@ Control selectResult(WINDOW* main, char* query, Type type, int selection);
 Control selectUserResult(WINDOW* main, char* query, Type type, int selection);
 char* addEllipses(char* string, int length, char* workingString);
 
-//#define TEST2
-#define NORM
-
 int main(int argc, char** argv)
 {
-#ifdef TEST1
-    clock_t t;
-    t = clock();
-    if (!populateDatabase("food_database.csv"))
-        return 1;
-    t = clock() - t;
-    double time_taken = ((double) t) / CLOCKS_PER_SEC;
-    printf("Tree creation took %fs\n", time_taken);
-    t = clock();
-
-//    findNumber(45001534);
-//    findName(argv[1]);
-//    findManufacturer("International Commodity Distributors, Inc.");
-    Node** results = NULL;
-    results = rbSearchString(databaseTrees[NAME], argv[1], 10);
-    if (results == NULL)
-        return ERROR;
-    char temp[12];
-    for (int item = 0; item < 10 && results[item] != NIL; item++)
-        printf("%s\n", addEllipses(results[item]->food->name, 10, &temp));
-    free(results);
-
-    t = clock() - t;
-    time_taken = ((double) t) / CLOCKS_PER_SEC * 1000000;
-    printf("Search took %0.fus\n", time_taken);
-//    char trash[5];
-//    scanf("%s", trash);
-    destroyDatabase();
-#endif
-
-#ifdef TEST2
-    userFile = fopen("matt.log", "a+");
-    userName = malloc(5);
-    userName[0] = '\0';
-    strcpy(userName, "matt");
-    //loadUserDatabase(userFile);
-    char filename[strlen(userName) + 5];
-    filename[0] = '\0';
-    sprintf(filename, "%s.log", userName);
-    FILE* copy = fopen("~tempfile", "w");
-    if (copy == NULL)
-        return ERROR;
-    rewind(userFile);
-    char* line = readLine(userFile);
-    while(line[0] != '\0')
-    {
-        char* temp = malloc(strlen(line) + 1);
-        temp[0] = '\0';
-        strcpy(temp, line);
-        if (strcmp(strsep(&temp, "~"), "45322767") != 0)
-            fprintf(copy, "%s\n", line);
-        free(line);
-        //free(temp);
-        line = readLine(userFile);
-    }
-    fclose(userFile);
-    fclose(copy);
-    remove(filename);
-    rename("~tempfile", filename);
-    userFile = fopen(filename, "a+");
-    if (userFile == NULL)
-        return ERROR;
-#endif
-
-
-#ifdef NORM
     initscr();
     noecho();
     curs_set(0);
@@ -233,7 +164,6 @@ int main(int argc, char** argv)
     }
     destroyDatabase();
     return QUIT;
-#endif
 }
 
 char* addEllipses(char* string, int length, char* workingString)
