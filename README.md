@@ -10,11 +10,18 @@ Here is a video demonstraton:
 
 <a href="https://www.youtube.com/watch?v=CvBNrDLogWE"><img src="https://img.youtube.com/vi/CvBNrDLogWE/maxresdefault.jpg" alt="Demo Video" width="512" height="288" border="10" /></a>
 
+## Requirements
+* ncurses
+  ```
+  sudo apt install libncurses5-dev
+  ```
+
 ## Setup
 1. Clone or download this repository to your computer
 2. Open a terminal and change into `food-tracker\`
-3. Run `./setup.sh`. This will create the build directory and download the USDA database
-4. Change into `build/` and run `make`. This will compile `food-tracker`
+3. Run `./setupDatabase.sh`. This will download the USDA database to `build/`
+4. Change into `build/` and run `cmake ..`. This will setup the directory for compiling
+5. Finally, run `make` to compile `food-tracker`
 
 ## Usage
 From the `build/` directory, run `./food-tracker`

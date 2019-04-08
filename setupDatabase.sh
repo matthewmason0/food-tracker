@@ -1,6 +1,5 @@
 #!/bin/bash
 
-rm -rf build
 mkdir build
 rm -rf setup
 mkdir setup
@@ -25,5 +24,3 @@ join -t \~ pn serving >../build/food_database.csv
 
 cd ..
 rm -rf setup
-cd build
-cmake ..
